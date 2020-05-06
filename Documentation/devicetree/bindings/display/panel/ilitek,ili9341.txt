@@ -1,0 +1,42 @@
+Ilitek ILI9341 TFT panel driver with SPI control bus
+
+This is a driver for 240x320 TFT panels, accepting a rgb input
+streams that get adapted and scaled to the panel.
+
+Required properties:
+  - compatible: "stm32f429-disco,ltdc-panel", "ilitek,ili9341"
+    (full system-specific compatible is always required to look up configuration)
+  - reg: address of the panel on the SPI bus
+
+Optional properties:
+  - reset-gpios: a GPIO spec for the reset pin, see gpio/gpio.txt
+  - dc-gpios: a GPIO spec for the dc pin, see gpio/gpio.txt
+
+  The following optional properties only apply to RGB input mode:
+
+  - pixelclk-active: see display/panel/display-timing.txt
+  - de-active: see display/panel/display-timing.txt
+  - hsync-active: see display/panel/display-timing.txt
+  - vsync-active: see display/panel/display-timing.txt
+
+The panel must obey the rules for a SPI slave device as specified in
+spi/spi-bus.txt
+
+The device node can contain one 'port' child node with one child
+'endpoint' node, according to the bindings defined in
+media/video-interfaces.txt. This node should describe panel's video bus.
+
+Example:
+
+panel: display@0 {
+	compatible = "stm32f429-disco,ltdc-panel", "ilitek,ili9341";
+	reg = <0>;
+	spi-3wire;
+	spi-max-frequency = <10000000>;
+	dc-gpios = <&gpiod 13 0>;
+	port {
+		panel_in: endpoint {
+			remote-endpoint = <&display_out>;
+		};
+	};
+};
