@@ -13,21 +13,27 @@ description: |
   Ilitek ILI9341 TFT panel driver with SPI control bus
   This is a driver for 320x240 TFT panels, accepting a rgb input
   streams that get adapted and scaled to the panel.
-  VCOMH outputs.
+
+allOf:
+  - $ref: panel-common.yaml#
 
 properties:
   compatible:
     items:
-      - const: ilitek,ili9341
+      - const: stm32f429,ltdc-panel
+      - {} # ilitek,ili9341, but not listed here to avoid false select
+  
+  reg: true
 
-  reg:
+  dc-gpios:
     maxItems: 1
+    description: panel spi dc gpio
 
-  data-mapping:
-    const: stm32f429-disco,ltdc-panel
+  spi-3wire: true
 
-  dc-gpios: true
-
+  spi-max-frequency:
+    const: 10000000
+ 
   port: true
 
 additionalProperties: false
@@ -36,20 +42,27 @@ required:
   - compatible
   - reg
   - dc-gpios
+  - spi-3wire
+  - spi-max-frequency
+  - port
 
 examples:
-  - |
-    panel: display@0 {
-        compatible = "stm32f429-disco,ltdc-panel", "ilitek,ili9341";
-        reg = <0>;
-        spi-3wire;
-        spi-max-frequency = <10000000>;
-        dc-gpios = <&gpiod 13 0>;
-        port {
-              panel_in: endpoint {
-                    remote-endpoint = <&display_out>;
-              };
+  - |+
+    spi {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        panel: display@0 {
+                 compatible = "stm32f429,ltdc-panel", "ilitek,ili9341";
+                 reg = <0>;
+                 spi-3wire;
+                 spi-max-frequency = <10000000>;
+                 dc-gpios = <&gpiod 13 0>;
+                 port {
+                         panel_in: endpoint {
+                           remote-endpoint = <&display_out>;
+                      };
+                 };
+             };
         };
-    };
 ...
 
