@@ -206,6 +206,6 @@ void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 		dev->archdata.dma_coherent = (get_cr() & CR_M) ? coherent : true;
 	}
 
-	if (!dev->archdata.dma_coherent)
+//	if (!dev->archdata.dma_coherent)
 		set_dma_ops(dev, &arm_nommu_dma_ops);
 }

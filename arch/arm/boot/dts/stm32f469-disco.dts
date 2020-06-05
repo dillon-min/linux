@@ -65,6 +65,38 @@
 		reg = <0x00000000 0x1000000>;
 	};
 
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		/*fbltdc: framebuffer {*/
+		linux,dma {
+			compatible = "shared-dma-pool";
+			size = <0x400000>;
+			no-map;
+			linux,dma-default;
+		};
+
+		mcuram1: framebuffer@20000000 {
+			compatible = "shared-dma-pool";
+			reg = <0x20000000 0x28000>;
+			no-map;
+		};
+
+		mcuram2: mcuram2@20028000 {
+			compatible = "shared-dma-pool";
+			reg = <0x20028000 0x8000>;
+			no-map;
+		};
+
+		mcuram3: dma2d@20030000 {
+			compatible = "shared-dma-pool";
+			reg = <0x20030000 0x50000>;
+			no-map;
+		};		
+	};
+
 	aliases {
 		serial0 = &usart3;
 	};
@@ -138,6 +170,7 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	status = "okay";
+	memory-region = <&mcuram1>;
 
 	ports {
 		#address-cells = <1>;
@@ -237,4 +270,8 @@
 	pinctrl-0 = <&usbotg_fs_pins_a>;
 	pinctrl-names = "default";
 	status = "okay";
+};
+&dma2d {
+	status = "okay";
+	memory-region = <&mcuram3>;
 };
