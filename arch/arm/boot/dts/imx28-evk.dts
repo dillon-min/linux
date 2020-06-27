@@ -87,7 +87,7 @@
 		backlight = <&backlight_display>;
 		dvdd-supply = <&reg_lcd_3v3>;
 		avdd-supply = <&reg_lcd_5v>;
-
+		status = "disabled";
 		port {
 			panel_in: endpoint {
 				remote-endpoint = <&display_out>;
@@ -147,7 +147,7 @@
 					fsl,pinmux-ids = <
 						MX28_PAD_SSP1_CMD__GPIO_2_13
 						MX28_PAD_SSP1_DATA3__GPIO_2_15
-						MX28_PAD_ENET0_RX_CLK__GPIO_4_13
+						MX28_PAD_LCD_RS__GPIO_1_26
 						MX28_PAD_SSP1_SCK__GPIO_2_12
 						MX28_PAD_PWM3__GPIO_3_28
 						MX28_PAD_LCD_RESET__GPIO_3_30
@@ -162,7 +162,7 @@
 				led_pin_gpio3_5: led_gpio3_5@0 {
 					reg = <0>;
 					fsl,pinmux-ids = <
-						MX28_PAD_AUART1_TX__GPIO_3_5
+						MX28_PAD_SSP0_DATA7__GPIO_2_7
 					>;
 					fsl,drive-strength = <MXS_DRIVE_4mA>;
 					fsl,voltage = <MXS_VOLTAGE_HIGH>;
@@ -198,7 +198,7 @@
 				pinctrl-names = "default";
 				pinctrl-0 = <&lcdif_24bit_pins_a
 					     &lcdif_pins_evk>;
-				status = "okay";
+				status = "disabled";
 
 				port {
 					display_out: endpoint {
@@ -237,7 +237,7 @@
 			};
 
 			lradc@80050000 {
-				status = "okay";
+				status = "disabled";
 				fsl,lradc-touchscreen-wires = <4>;
 				fsl,ave-ctrl = <4>;
 				fsl,ave-delay = <2>;
@@ -273,20 +273,19 @@
 
 			duart: serial@80074000 {
 				pinctrl-names = "default";
-				pinctrl-0 = <&duart_pins_a>;
+				pinctrl-0 = <&duart_pins_b>;
 				status = "okay";
 			};
 
 			auart0: serial@8006a000 {
 				pinctrl-names = "default";
-				pinctrl-0 = <&auart0_pins_a>;
-				uart-has-rtscts;
+				pinctrl-0 = <&auart0_2pins_a>;
 				status = "okay";
 			};
 
-			auart3: serial@80070000 {
+			auart1: serial@8006c000 {
 				pinctrl-names = "default";
-				pinctrl-0 = <&auart3_pins_a>;
+				pinctrl-0 = <&auart1_2pins_a>;
 				status = "okay";
 			};
 
@@ -318,7 +317,7 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&mac0_pins_a>;
 			phy-supply = <&reg_fec_3v3>;
-			phy-reset-gpios = <&gpio4 13 GPIO_ACTIVE_LOW>;
+			phy-reset-gpios = <&gpio1 26 GPIO_ACTIVE_LOW>;
 			phy-reset-duration = <100>;
 			status = "okay";
 		};
@@ -327,7 +326,7 @@
 			phy-mode = "rmii";
 			pinctrl-names = "default";
 			pinctrl-0 = <&mac1_pins_a>;
-			status = "okay";
+			status = "disabled";
 		};
 	};
 
@@ -346,7 +345,7 @@
 
 		user {
 			label = "Heartbeat";
-			gpios = <&gpio3 5 0>;
+			gpios = <&gpio2 7 0>;
 			linux,default-trigger = "heartbeat";
 		};
 	};
@@ -356,5 +355,6 @@
 		pwms = <&pwm 2 5000000>;
 		brightness-levels = <0 4 8 16 32 64 128 255>;
 		default-brightness-level = <6>;
+		status = "disabled";
 	};
 };
