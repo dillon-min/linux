@@ -2388,7 +2388,7 @@ static int __init pl011_console_match(struct console *co, char *name, int idx,
 
 static struct uart_driver amba_reg;
 static struct console amba_console = {
-	.name		= "ttyAMA",
+	.name		= "ttyAM",
 	.write		= pl011_console_write,
 	.device		= uart_console_device,
 	.setup		= pl011_console_setup,
@@ -2520,8 +2520,8 @@ EARLYCON_DECLARE(qdf2400_e44, qdf2400_e44_early_console_setup);
 
 static struct uart_driver amba_reg = {
 	.owner			= THIS_MODULE,
-	.driver_name		= "ttyAMA",
-	.dev_name		= "ttyAMA",
+	.driver_name		= "ttyAM",
+	.dev_name		= "ttyAM",
 	.major			= SERIAL_AMBA_MAJOR,
 	.minor			= SERIAL_AMBA_MINOR,
 	.nr			= UART_NR,

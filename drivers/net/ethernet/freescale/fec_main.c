@@ -958,7 +958,7 @@ fec_restart(struct net_device *ndev)
 	if (fep->quirks & FEC_QUIRK_HAS_AVB) {
 		writel(0, fep->hwp + FEC_ECNTRL);
 	} else {
-		writel(1, fep->hwp + FEC_ECNTRL);
+		//writel(1, fep->hwp + FEC_ECNTRL);
 		udelay(10);
 	}
 
