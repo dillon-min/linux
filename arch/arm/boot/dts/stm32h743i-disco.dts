@@ -62,6 +62,17 @@
 		serial0 = &uart4;
 	};
 
+	leds {
+		compatible = "gpio-leds";
+		led-red {
+			gpios = <&gpioi 8 0>;
+		};
+		led-green {
+			gpios = <&gpioc 15 0>;
+			linux,default-trigger = "heartbeat";
+		};
+	};
+
 	v3v3: regulator-v3v3 {
 		compatible = "regulator-fixed";
 		regulator-name = "v3v3";
