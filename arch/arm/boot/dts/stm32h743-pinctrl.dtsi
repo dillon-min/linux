@@ -282,6 +282,19 @@
 				};
 			};
 
+			uart4_pins: uart4-0 {
+				pins1 {
+					pinmux = <STM32_PINMUX('A', 0, AF8)>; /* UART4_TX */
+					bias-disable;
+					drive-push-pull;
+					slew-rate = <0>;
+				};
+				pins2 {
+					pinmux = <STM32_PINMUX('I', 9, AF8)>; /* UART4_RX */
+					bias-disable;
+				};
+			};
+
 			usbotg_hs_pins_a: usbotg-hs-0 {
 				pins {
 					pinmux = <STM32_PINMUX('H', 4, AF10)>,	/* ULPI_NXT */

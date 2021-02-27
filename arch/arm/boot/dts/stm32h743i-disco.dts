@@ -50,16 +50,16 @@
 
 	chosen {
 		bootargs = "root=/dev/ram";
-		stdout-path = "serial0:115200n8";
+		stdout-path = "serial0:2000000n8";
 	};
 
-	memory@d0000000 {
+	memory@c0000000 {
 		device_type = "memory";
-		reg = <0xd0000000 0x2000000>;
+		reg = <0xc0000000 0x2000000>;
 	};
 
 	aliases {
-		serial0 = &usart2;
+		serial0 = &uart4;
 	};
 
 	v3v3: regulator-v3v3 {
@@ -101,11 +101,17 @@
 	st,neg-edge;
 	bus-width = <4>;
 	vmmc-supply = <&v3v3>;
-	status = "okay";
+	status = "disabled";
 };
 
 &usart2 {
 	pinctrl-0 = <&usart2_pins>;
+	pinctrl-names = "default";
+	status = "disabled";
+};
+
+&uart4 {
+	pinctrl-0 = <&uart4_pins>;
 	pinctrl-names = "default";
 	status = "okay";
 };

@@ -132,12 +132,23 @@ __v7m_setup_cont:
 	dsb
 	mov	r6, lr			@ save LR
 	ldr	sp, =init_thread_union + THREAD_START_SP
+	@mov	r0, sp
+	@b	printhex8
 	cpsie	i
 	svc	#0
 1:	cpsid	i
+
+	tst	lr, #EXC_RET_STACK_MASK
+	mrsne	r4, psp
+	moveq	r4, sp
+	ldmia	r4!, {r0-r3, r12}
+	
+	@mov	r0, r12
+	@b	printhex8
+
 	/* Calculate exc_ret */
 	orr	r10, lr, #EXC_RET_THREADMODE_PROCESSSTACK
-	ldmia	sp, {r0-r3, r12}
+	@ldmia	sp, {r0-r3, r12}
 	str	r5, [r12, #11 * 4]	@ restore the original SVC vector entry
 	mov	lr, r6			@ restore LR
 

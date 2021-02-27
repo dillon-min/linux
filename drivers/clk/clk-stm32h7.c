@@ -191,7 +191,6 @@ static void ready_gate_clk_disable(struct clk_hw *hw)
 	struct stm32_ready_gate *rgate = to_ready_gate_clk(gate);
 	int bit_status;
 	unsigned int timeout = RGATE_TIMEOUT;
-
 	if (!clk_gate_ops.is_enabled(hw))
 		return;
 
@@ -199,7 +198,6 @@ static void ready_gate_clk_disable(struct clk_hw *hw)
 
 	do {
 		bit_status = !!(readl(gate->reg) & BIT(rgate->bit_rdy));
-
 		if (bit_status)
 			udelay(100);
 
@@ -659,7 +657,7 @@ static const struct st32h7_pll_cfg stm32h7_pll3 = {
 
 static const struct stm32_pll_data stm32_pll[] = {
 	{ "vco1", "pllsrc", CLK_IGNORE_UNUSED, &stm32h7_pll1 },
-	{ "vco2", "pllsrc", 0, &stm32h7_pll2 },
+	{ "vco2", "pllsrc", CLK_IGNORE_UNUSED, &stm32h7_pll2 },
 	{ "vco3", "pllsrc", 0, &stm32h7_pll3 },
 };
 
@@ -963,9 +961,12 @@ static const struct composite_clk_cfg stm32_odf[3][3] = {
 	},
 
 	{
-		M_ODF("pll2_p", "vco2", RCC_PLLCFGR, 19, RCC_PLL2DIVR,  9, 7),
-		M_ODF("pll2_q", "vco2", RCC_PLLCFGR, 20, RCC_PLL2DIVR, 16, 7),
-		M_ODF("pll2_r", "vco2", RCC_PLLCFGR, 21, RCC_PLL2DIVR, 24, 7),
+		M_ODF_F("pll2_p", "vco2", RCC_PLLCFGR, 19, RCC_PLL2DIVR,  9, 7,
+			CLK_IGNORE_UNUSED),
+		M_ODF_F("pll2_q", "vco2", RCC_PLLCFGR, 20, RCC_PLL2DIVR, 16, 7,
+			CLK_IGNORE_UNUSED),
+		M_ODF_F("pll2_r", "vco2", RCC_PLLCFGR, 21, RCC_PLL2DIVR, 24, 7,
+			CLK_IGNORE_UNUSED),
 	},
 	{
 		M_ODF("pll3_p", "vco3", RCC_PLLCFGR, 22, RCC_PLL3DIVR,  9, 7),
