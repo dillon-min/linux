@@ -43,6 +43,8 @@
 /dts-v1/;
 #include "stm32h743.dtsi"
 #include "stm32h743-pinctrl.dtsi"
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/gpio/gpio.h>
 
 / {
 	model = "STMicroelectronics STM32H743i-Discovery board";
@@ -93,6 +95,17 @@
 		regulator-max-microvolt = <3300000>;
 		regulator-always-on;
 	};
+
+	wlan_pwr: regulator-wlan {
+		compatible = "regulator-fixed";
+
+		regulator-name = "wl-reg";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+
+		gpios = <&gpioc 13 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
 };
 
 &clk_hse {
@@ -125,7 +138,7 @@
 	st,neg-edge;
 	bus-width = <4>;
 	vmmc-supply = <&v3v3>;
-	status = "disabled";
+	status = "okay";
 };
 
 &usart2 {
@@ -156,7 +169,7 @@
 	status = "okay";
 	pinctrl-0 = <&spi1_pins>;
 	pinctrl-names = "default";
-	cs-gpios = <&gpioa 4 0>;
+	cs-gpios = <&gpioa 4 GPIO_ACTIVE_LOW>;
 	dmas = <&dmamux1 37 0x400 0x05>,
 	       <&dmamux1 38 0x400 0x05>;
 	dma-names = "rx", "tx";
@@ -176,3 +189,46 @@
 	};
 };
 
+/* WiFi */
+&sdmmc2 {
+	pinctrl-names = "default", "opendrain", "sleep";
+	pinctrl-0 = <&sdmmc2_b4_pins_a>;
+	pinctrl-1 = <&sdmmc2_b4_od_pins_a>;
+	pinctrl-2 = <&sdmmc2_b4_sleep_pins_a>;
+	broken-cd;
+	non-removable;
+	st,neg-edge;
+	bus-width = <4>;
+	vmmc-supply = <&wlan_pwr>;
+	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+	brcmf: bcrmf@1 {
+		reg = <1>;
+		compatible = "brcm,bcm4329-fmac";
+		interrupt-parent = <&gpioe>;
+		interrupts = <3 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "host-wake";
+	};
+};
+
+/* Bluetooth */
+&usart3 {
+	/* Note: HW flow control is broken, hence using custom CTS/RTS gpios */
+	/delete-property/st,hw-flow-ctrl;
+	cts-gpios = <&gpiod 11 GPIO_ACTIVE_LOW>;
+	rts-gpios = <&gpiod 12 GPIO_ACTIVE_LOW>;
+	dmas = <&dmamux1 45 0x400 0x05>,
+	       <&dmamux1 46 0x400 0x05>;
+	dma-names = "rx", "tx";
+	status = "okay";
+
+	bluetooth {
+		host-wakeup-gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
+		device-wakeup-gpios = <&gpioi 10 GPIO_ACTIVE_HIGH>;
+		shutdown-gpios = <&gpioi 11 GPIO_ACTIVE_HIGH>;
+		compatible = "brcm,bcm43438-bt";
+		max-speed = <115200>;
+	};
+};
