@@ -75,6 +75,7 @@
 
 	aliases {
 		serial0 = &uart4;
+		serial1 = &usart3;
 	};
 
 	leds {
@@ -223,6 +224,7 @@
 	dmas = <&dmamux1 45 0x400 0x05>,
 	       <&dmamux1 46 0x400 0x05>;
 	dma-names = "rx", "tx";
+	/*uart-has-rtscts;*/
 	status = "okay";
 
 	bluetooth {
