@@ -58,6 +58,19 @@
 		reg = <0xc0000000 0x2000000>;
 	};
 
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		linux,cma {
+			compatible = "shared-dma-pool";
+			no-map;
+			size = <0x400000>;
+			linux,dma-default;
+		};
+	};
+
 	aliases {
 		serial0 = &uart4;
 	};
@@ -126,3 +139,40 @@
 	pinctrl-names = "default";
 	status = "okay";
 };
+
+&dma1 {
+	status = "okay";
+};
+
+&dma2 {
+	status = "okay";
+};
+/* spi1_nss pa4 af5
+ * spi1_sck pa5 af5
+ * spi1_mosi pb5 af5
+ * spi1_miso pg9 af5
+ */
+&spi1 {
+	status = "okay";
+	pinctrl-0 = <&spi1_pins>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpioa 4 0>;
+	dmas = <&dmamux1 37 0x400 0x05>,
+	       <&dmamux1 38 0x400 0x05>;
+	dma-names = "rx", "tx";
+
+	spi-flash@0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "winbond,w25q128", "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <108000000>;
+		st,spi-midi-ns = <4000>;
+
+		partition@0 {
+			label = "Filesystem";
+			reg = <0 0x1000000>;
+		};
+	};
+};
+

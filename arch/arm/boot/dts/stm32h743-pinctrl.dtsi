@@ -314,6 +314,23 @@
 					slew-rate = <2>;
 				};
 			};
+
+			spi1_pins: spi1-0 {
+				pins1 {
+					pinmux = <STM32_PINMUX('A', 5, AF5)>,
+						/* SPI1_CLK */
+						 <STM32_PINMUX('B', 5, AF5)>;
+						/* SPI1_MOSI */
+					bias-disable;
+					drive-push-pull;
+					slew-rate = <2>;
+				};
+				pins2 {
+					pinmux = <STM32_PINMUX('G', 9, AF5)>;
+						/* SPI1_MISO */
+					bias-disable;
+				};
+			};
 		};
 	};
 };
