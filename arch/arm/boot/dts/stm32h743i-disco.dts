@@ -68,7 +68,7 @@
 		linux,cma {
 			compatible = "shared-dma-pool";
 			no-map;
-			size = <0x400000>;
+			size = <0x100000>;
 			linux,dma-default;
 		};
 	};
@@ -175,16 +175,16 @@
 	       <&dmamux1 38 0x400 0x05>;
 	dma-names = "rx", "tx";
 
-	spi-flash@0 {
+	flash@0 {
 		#address-cells = <1>;
-		#size-cells = <0>;
+		#size-cells = <1>;
 		compatible = "winbond,w25q128", "jedec,spi-nor";
 		reg = <0>;
 		spi-max-frequency = <108000000>;
 		st,spi-midi-ns = <4000>;
 
 		partition@0 {
-			label = "Filesystem";
+			label = "root filesystem";
 			reg = <0 0x1000000>;
 		};
 	};
