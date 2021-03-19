@@ -203,19 +203,19 @@
 };
 
 &usart3 {
-	/delete-property/st,hw-flow-ctrl;
-	cts-gpios = <&gpiod 11 GPIO_ACTIVE_LOW>;
-	rts-gpios = <&gpiod 12 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&usart3_pins>;
 	dmas = <&dmamux1 45 0x400 0x05>,
 	       <&dmamux1 46 0x400 0x05>;
 	dma-names = "rx", "tx";
+	st,hw-flow-ctrl;
 	status = "okay";
 
 	bluetooth {
+		compatible = "brcm,bcm43438-bt";
 		host-wakeup-gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
 		device-wakeup-gpios = <&gpioi 10 GPIO_ACTIVE_HIGH>;
 		shutdown-gpios = <&gpioi 11 GPIO_ACTIVE_HIGH>;
-		compatible = "brcm,bcm43438-bt";
 		max-speed = <115200>;
 	};
 };
