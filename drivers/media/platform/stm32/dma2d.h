@@ -2,10 +2,17 @@
 /*
  * ST stm32 DMA2D - 2D Graphics Accelerator Driver
  *
- * Copyright (c) 2020 Dillon Min
- * based on s5p-g2d 
- * dillon.minfei@gmail.com
+ * Copyright (c) 2021 Dillon Min
+ * Dillon Min, <dillon.minfei@gmail.com>
+ *
+ * based on s5p-g2d
+ *
+ * Copyright (c) 2011 Samsung Electronics Co., Ltd.
+ * Kamil Debski, <k.debski@samsung.com>
  */
+
+#ifndef __DMA2D_H__
+#define __DMA2D_H__
 
 #include <linux/platform_device.h>
 #include <media/v4l2-device.h>
@@ -63,7 +70,12 @@ struct dma2d_frame {
 	u16	line_ofs;
 	/* Image format */
 	struct dma2d_fmt *fmt;
-	u8	argb[4];
+	/* [0]: blue
+	 * [1]: green
+	 * [2]: red
+	 * [3]: alpha
+	 */
+	u8	a_rgb[4];
 	/*
 	 * AM[1:0] of DMA2D_FGPFCCR
 	 */
@@ -124,3 +136,5 @@ void dma2d_config_bg(struct dma2d_dev *d, struct dma2d_frame *frm,
 		dma_addr_t b_addr);
 void dma2d_config_common(struct dma2d_dev *d, enum dma2d_op_mode op_mode,
 		u16 width, u16 height);
+
+#endif /* __DMA2D_H__ */

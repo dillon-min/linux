@@ -2,9 +2,17 @@
 /*
  * ST stm32 Chrom-Art - 2D Graphics Accelerator Driver
  *
- * Copyright (c) 2020 Dillon Min
- * dillon.minfei@gmail.com>
+ * Copyright (c) 2021 Dillon Min
+ * Dillon Min, <dillon.minfei@gmail.com>
+ *
+ * based on s5p-g2d
+ *
+ * Copyright (c) 2011 Samsung Electronics Co., Ltd.
+ * Kamil Debski, <k.debski@samsung.com>
  */
+
+#ifndef __DMA2D_REGS_H__
+#define __DMA2D_REGS_H__
 
 #define DMA2D_CR_REG		0x0000
 #define CR_MODE_MASK		GENMASK(17, 16)
@@ -96,3 +104,11 @@
 #define MAX_WIDTH		0x3fff
 #define MAX_HEIGHT		0xffff
 
+#define DEFAULT_WIDTH		240
+#define DEFAULT_HEIGHT		320
+#define DEFAULT_SIZE		307200
+
+#define CM_MODE_ARGB8888	0x00
+#define CM_MODE_ARGB4444	0x04
+#define CM_MODE_A4		0x0a
+#endif /* __DMA2D_REGS_H__ */

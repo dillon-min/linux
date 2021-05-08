@@ -2,8 +2,13 @@
 /*
  * STM32 DMA2D - 2D Graphics Accelerator Driver
  *
- * Copyright (c) 2020 Dillon Min
+ * Copyright (c) 2021 Dillon Min
  * Dillon Min, <dillon.minfei@gmail.com>
+ *
+ * based on s5p-g2d
+ *
+ * Copyright (c) 2011 Samsung Electronics Co., Ltd.
+ * Kamil Debski, <k.debski@samsung.com>
  */
 
 #include <linux/module.h>
@@ -58,13 +63,13 @@ static struct dma2d_fmt formats[] = {
 #define NUM_FORMATS ARRAY_SIZE(formats)
 
 static struct dma2d_frame def_frame = {
-	.width		= 240,
-	.height		= 320,
+	.width		= DEFAULT_WIDTH,
+	.height		= DEFAULT_HEIGHT,
 	.line_ofs	= 0,
-	.argb		= {0x00, 0x00, 0x00, 0xff},
+	.a_rgb		= {0x00, 0x00, 0x00, 0xff},
 	.a_mode		= DMA2D_ALPHA_MODE_NO_MODIF,
 	.fmt		= &formats[0],
-	.size		= 307200,
+	.size		= DEFAULT_SIZE,
 };
 
 static struct dma2d_fmt *find_fmt(int pixelformat)
@@ -77,7 +82,6 @@ static struct dma2d_fmt *find_fmt(int pixelformat)
 	return NULL;
 }
 
-
 static struct dma2d_frame *get_frame(struct dma2d_ctx *ctx,
 				   enum v4l2_buf_type type)
 {
@@ -86,8 +90,6 @@ static struct dma2d_frame *get_frame(struct dma2d_ctx *ctx,
 		return &ctx->fg;
 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
 		return &ctx->out;
-	case V4L2_BUF_TYPE_PRIVATE:
-		return &ctx->bg;
 	default:
 		return ERR_PTR(-EINVAL);
 	}
@@ -171,6 +173,46 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
 	return vb2_queue_init(dst_vq);
 }
 
+#define V4L2_CID_DMA2D_R2M_COLOR (V4L2_CID_USER_BASE | 0x1001)
+
+static int r2m_s_ctrl(struct v4l2_ctrl *ctrl)
+{
+	struct dma2d_frame *frm;
+	struct dma2d_ctx *ctx = container_of(ctrl->handler, struct dma2d_ctx,
+								ctrl_handler);
+
+	switch (ctrl->id) {
+	case V4L2_CID_DMA2D_R2M_COLOR:
+		frm = get_frame(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
+		frm->a_rgb[3] = (ctrl->val >> 24) & 0xff;
+		frm->a_rgb[2] = (ctrl->val >> 16) & 0xff;
+		frm->a_rgb[1] = (ctrl->val >>  8) & 0xff;
+		frm->a_rgb[0] = ctrl->val & 0xff;
+		ctx->op_mode = DMA2D_MODE_R2M;
+		printk("%s: set to r2m mode\r\n", __func__);
+		break;
+	}
+
+	return 0;
+}
+
+static const struct v4l2_ctrl_ops dma2d_r2m_ops = {
+	.s_ctrl = r2m_s_ctrl,
+};
+
+static const struct v4l2_ctrl_config dma2d_r2m_control = {
+	.ops = &dma2d_r2m_ops,
+	.id = V4L2_CID_DMA2D_R2M_COLOR,
+	.name = "R2M Alpha/Color Value",
+	.type = V4L2_CTRL_TYPE_U32,
+	.min = 0x00000000,
+	.max = 0xffffffff,
+	.step = 1,
+	.def = 0,
+	.dims = { 1 },
+	.elem_size = sizeof(u32),
+};
+
 static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct dma2d_ctx *ctx = container_of(ctrl->handler, struct dma2d_ctx,
@@ -180,7 +222,8 @@ static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 	spin_lock_irqsave(&ctx->dev->ctrl_lock, flags);
 	switch (ctrl->id) {
 	case V4L2_CID_ALPHA_COMPONENT:
-		ctx->alpha_component = ctrl->val;
+		/* set the background alpha value*/
+		ctx->alpha_component = (u8) ctrl->val;
 		break;
 	default:
 		v4l2_err(&ctx->dev->v4l2_dev, "Invalid control\n");
@@ -202,6 +245,7 @@ static int dma2d_setup_ctrls(struct dma2d_ctx *ctx)
 
 	v4l2_ctrl_new_std(&ctx->ctrl_handler, &dma2d_ctrl_ops,
 			V4L2_CID_ALPHA_COMPONENT, 0, 255, 1, 255);
+	//v4l2_ctrl_new_custom(&ctx->ctrl_handler, &dma2d_r2m_control, NULL);
 
 	return 0;
 }
@@ -222,6 +266,7 @@ static int dma2d_open(struct file *file)
 	ctx->out	= def_frame;
 	ctx->op_mode	= DMA2D_MODE_M2M_FPC; 
 	ctx->colorspace = V4L2_COLORSPACE_REC709;
+	ctx->alpha_component = 0x00;
 	if (mutex_lock_interruptible(&dev->mutex)) {
 		kfree(ctx);
 		return -ERESTARTSYS;
@@ -396,7 +441,7 @@ static int vidioc_s_fmt(struct file *file, void *prv, struct v4l2_format *f)
 	ctx->nlr_w	= frm->c_width;
 	ctx->nlr_h	= frm->c_height;
 	if (f->fmt.win.global_alpha != 0) {
-		frm->argb[3] = f->fmt.win.global_alpha;
+		frm->a_rgb[3] = f->fmt.win.global_alpha;
 		frm->a_mode = DMA2D_ALPHA_MODE_REPLACE;
 	}
 
@@ -531,10 +576,9 @@ static int vidioc_s_fbuf(struct file *file, void *priv, const struct v4l2_frameb
 	fmt = find_fmt(fb->fmt.pixelformat);
 	if (fmt == NULL)
 		return -EINVAL;
-
-	frm = get_frame(ctx, V4L2_BUF_TYPE_PRIVATE);
+	/* use fbuf as background layer*/
+	frm = &ctx->bg;
 	
-	/* ok, accept it */
 	frm->c_width	= fb->fmt.width;
 	frm->c_height	= fb->fmt.height;
 	frm->right	= frm->c_width;
@@ -560,39 +604,43 @@ static void device_run(void *prv)
 	struct vb2_v4l2_buffer *src, *dst;
 	unsigned long flags;
 
-	dev->curr = ctx;
-
-	if (ctx->op_mode != DMA2D_MODE_R2M)
-		src = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
-
-	dst = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
-
-	clk_enable(dev->gate);
-
 	spin_lock_irqsave(&dev->ctrl_lock, flags);
 
-	if (ctx->op_mode == DMA2D_MODE_M2M_BLEND)
-		dma2d_config_bg(dev, &ctx->bg, (dma_addr_t)ctx->fb_buf.base);
+	dev->curr = ctx;
 
-	if (ctx->op_mode != DMA2D_MODE_R2M)
+	dst = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
+	if (dst == NULL)
+		goto END;
+
+	clk_enable(dev->gate);
+	printk("ctx->opmode %d\r\n", ctx->op_mode);
+	if (ctx->op_mode != DMA2D_MODE_R2M) {
+		src = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
 		dma2d_config_fg(dev, &ctx->fg,
 			vb2_dma_contig_plane_dma_addr(&src->vb2_buf, 0));
-
-	dma2d_config_out(dev, &ctx->out,
-			vb2_dma_contig_plane_dma_addr(&dst->vb2_buf, 0));
-
-	if (ctx->op_mode != DMA2D_MODE_R2M &&
-			ctx->op_mode != DMA2D_MODE_M2M_BLEND) {
-		if (ctx->fg.fmt->fourcc == ctx->out.fmt->fourcc)
-			ctx->op_mode = DMA2D_MODE_M2M;
-		else
-			ctx->op_mode = DMA2D_MODE_M2M_FPC;
+	
+		if (ctx->op_mode == DMA2D_MODE_M2M_BLEND) {
+			if (ctx->alpha_component != 0) {
+				ctx->bg.a_rgb[3] = ctx->alpha_component;
+				ctx->bg.a_mode = DMA2D_ALPHA_MODE_REPLACE; 
+			}
+			dma2d_config_bg(dev, &ctx->bg,
+					(dma_addr_t)ctx->fb_buf.base);
+		} else {
+			if (ctx->fg.fmt->fourcc == ctx->out.fmt->fourcc)
+				ctx->op_mode = DMA2D_MODE_M2M;
+			else
+				ctx->op_mode = DMA2D_MODE_M2M_FPC;
+		}
 	}
 
 	dma2d_config_common(dev, ctx->op_mode, frm->width, frm->height);
+	dma2d_config_out(dev, &ctx->out,
+			vb2_dma_contig_plane_dma_addr(&dst->vb2_buf, 0));
 
 	dma2d_start(dev);
 
+END:
 	spin_unlock_irqrestore(&dev->ctrl_lock, flags);
 }
 
@@ -681,8 +729,8 @@ static const struct v4l2_ioctl_ops dma2d_ioctl_ops = {
 	.vidioc_g_selection		= vidioc_g_selection,
 	.vidioc_s_selection		= vidioc_s_selection,
 	
-//	.vidioc_g_fbuf			= vidioc_g_fbuf,
-//	.vidioc_s_fbuf			= vidioc_s_fbuf,
+	.vidioc_g_fbuf			= vidioc_g_fbuf,
+	.vidioc_s_fbuf			= vidioc_s_fbuf,
 
 	.vidioc_subscribe_event = v4l2_ctrl_subscribe_event,
 	.vidioc_unsubscribe_event = v4l2_event_unsubscribe,
