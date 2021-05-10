@@ -173,48 +173,11 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
 	return vb2_queue_init(dst_vq);
 }
 
-#define V4L2_CID_DMA2D_R2M_COLOR (V4L2_CID_USER_BASE | 0x1001)
-
-static int r2m_s_ctrl(struct v4l2_ctrl *ctrl)
-{
-	struct dma2d_frame *frm;
-	struct dma2d_ctx *ctx = container_of(ctrl->handler, struct dma2d_ctx,
-								ctrl_handler);
-
-	switch (ctrl->id) {
-	case V4L2_CID_DMA2D_R2M_COLOR:
-		frm = get_frame(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
-		frm->a_rgb[3] = (ctrl->val >> 24) & 0xff;
-		frm->a_rgb[2] = (ctrl->val >> 16) & 0xff;
-		frm->a_rgb[1] = (ctrl->val >>  8) & 0xff;
-		frm->a_rgb[0] = ctrl->val & 0xff;
-		ctx->op_mode = DMA2D_MODE_R2M;
-		printk("%s: set to r2m mode\r\n", __func__);
-		break;
-	}
-
-	return 0;
-}
-
-static const struct v4l2_ctrl_ops dma2d_r2m_ops = {
-	.s_ctrl = r2m_s_ctrl,
-};
-
-static const struct v4l2_ctrl_config dma2d_r2m_control = {
-	.ops = &dma2d_r2m_ops,
-	.id = V4L2_CID_DMA2D_R2M_COLOR,
-	.name = "R2M Alpha/Color Value",
-	.type = V4L2_CTRL_TYPE_U32,
-	.min = 0x00000000,
-	.max = 0xffffffff,
-	.step = 1,
-	.def = 0,
-	.dims = { 1 },
-	.elem_size = sizeof(u32),
-};
-
+#define V4L2_CID_DMA2D_R2M_COLOR (V4L2_CID_USER_BASE | 0x1200)
+#define V4L2_CID_DMA2D_R2M_MODE (V4L2_CID_USER_BASE | 0x1201)
 static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 {
+	struct dma2d_frame *frm;
 	struct dma2d_ctx *ctx = container_of(ctrl->handler, struct dma2d_ctx,
 								ctrl_handler);
 	unsigned long flags;
@@ -224,7 +187,26 @@ static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_ALPHA_COMPONENT:
 		/* set the background alpha value*/
 		ctx->alpha_component = (u8) ctrl->val;
+		printk("%s: set to alpha mode %d\r\n", __func__, ctrl->val);
 		break;
+	case V4L2_CID_DMA2D_R2M_COLOR:
+		frm = get_frame(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
+		frm->a_rgb[3] = (ctrl->val >> 24) & 0xff;
+		frm->a_rgb[2] = (ctrl->val >> 16) & 0xff;
+		frm->a_rgb[1] = (ctrl->val >>  8) & 0xff;
+		frm->a_rgb[0] = ctrl->val & 0xff;
+		printk("%s: set to r2m 2mode %x\r\n", __func__, ctrl->val);
+		break;
+	case V4L2_CID_DMA2D_R2M_MODE:
+		if (ctrl->val) {
+			printk("%s: set to r2m mode %d\r\n", __func__,
+					__LINE__);
+			ctx->op_mode = DMA2D_MODE_R2M;
+		} else
+			printk("%s: set to non r2m mode %d\r\n", __func__,
+					__LINE__);
+		break;
+
 	default:
 		v4l2_err(&ctx->dev->v4l2_dev, "Invalid control\n");
 		spin_unlock_irqrestore(&ctx->dev->ctrl_lock, flags);
@@ -236,16 +218,40 @@ static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 }
 
 static const struct v4l2_ctrl_ops dma2d_ctrl_ops = {
-	.s_ctrl		= dma2d_s_ctrl,
+	.s_ctrl	= dma2d_s_ctrl,
+};
+
+static const struct v4l2_ctrl_config dma2d_r2m_control[] = {
+	{
+	.ops = &dma2d_ctrl_ops,
+	.id = V4L2_CID_DMA2D_R2M_COLOR,
+	.name = "R2M Alpha/Color Value",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0xffffffff80000000ULL,
+	.max = 0x7fffffff,
+	.def = 0,
+	.step = 1,
+	},
+	{
+	.ops = &dma2d_ctrl_ops,
+	.id = V4L2_CID_DMA2D_R2M_MODE,
+	.name = "Set to r2m mode",
+	.type = V4L2_CTRL_TYPE_BOOLEAN,
+	.min = 0,
+	.max = 1,
+	.def = 0,
+	.step = 1,
+	}
 };
 
 static int dma2d_setup_ctrls(struct dma2d_ctx *ctx)
 {
-	v4l2_ctrl_handler_init(&ctx->ctrl_handler, 1);
+	v4l2_ctrl_handler_init(&ctx->ctrl_handler, 3);
 
 	v4l2_ctrl_new_std(&ctx->ctrl_handler, &dma2d_ctrl_ops,
 			V4L2_CID_ALPHA_COMPONENT, 0, 255, 1, 255);
-	//v4l2_ctrl_new_custom(&ctx->ctrl_handler, &dma2d_r2m_control, NULL);
+	v4l2_ctrl_new_custom(&ctx->ctrl_handler, &dma2d_r2m_control[0], NULL);
+	v4l2_ctrl_new_custom(&ctx->ctrl_handler, &dma2d_r2m_control[1], NULL);
 
 	return 0;
 }
@@ -603,14 +609,16 @@ static void device_run(void *prv)
 	struct dma2d_frame *frm = &ctx->out;
 	struct vb2_v4l2_buffer *src, *dst;
 	unsigned long flags;
-
+	printk("%s %d\r\n", __func__, __LINE__);
 	spin_lock_irqsave(&dev->ctrl_lock, flags);
 
+	printk("%s %d\r\n", __func__, __LINE__);
 	dev->curr = ctx;
 
 	dst = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
 	if (dst == NULL)
 		goto END;
+	printk("%s %d\r\n", __func__, __LINE__);
 
 	clk_enable(dev->gate);
 	printk("ctx->opmode %d\r\n", ctx->op_mode);
@@ -657,8 +665,8 @@ static irqreturn_t dma2d_isr(int irq, void *prv)
 		clk_disable(dev->gate);
 
 		BUG_ON(ctx == NULL);
-		if (ctx->op_mode != DMA2D_MODE_R2M)
-			src = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
+		//if (ctx->op_mode != DMA2D_MODE_R2M)
+		src = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
 
 		dst = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
 		
