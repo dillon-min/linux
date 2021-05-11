@@ -59,6 +59,9 @@ static struct dma2d_fmt formats[] = {
 		.cmode = DMA2D_CMODE_ARGB4444,
 		.depth = 16,
 	},
+	/*
+	 * TODO: Add support for A4, A8, L4, AL88, AL44, L8
+	 */
 };
 #define NUM_FORMATS ARRAY_SIZE(formats)
 
@@ -195,6 +198,7 @@ static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 		printk("%s: set to alpha mode %d\r\n", __func__, ctrl->val);
 		break;
 	case V4L2_CID_DMA2D_R2M_COLOR:
+		printk("%s %d\r\n", __func__, __LINE__);
 		frm = get_frame(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
 		frm->a_rgb[3] = (ctrl->val >> 24) & 0xff;
 		frm->a_rgb[2] = (ctrl->val >> 16) & 0xff;
@@ -204,6 +208,7 @@ static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_DMA2D_R2M_MODE:
 		if (ctrl->val)
 			ctx->op_mode = DMA2D_MODE_R2M;
+		printk("%s %d\r\n", __func__, __LINE__);
 		break;
 	default:
 		v4l2_err(&ctx->dev->v4l2_dev, "Invalid control\n");
@@ -450,8 +455,6 @@ static int vidioc_s_fmt(struct file *file, void *prv, struct v4l2_format *f)
 	frm->bottom	= frm->height;
 	frm->fmt	= fmt;
 	frm->line_ofs	= 0;
-	ctx->nlr_w	= frm->c_width;
-	ctx->nlr_h	= frm->c_height;
 	if (f->fmt.win.global_alpha != 0) {
 		frm->a_rgb[3] = f->fmt.win.global_alpha;
 		frm->a_mode = DMA2D_ALPHA_MODE_REPLACE;
@@ -464,11 +467,11 @@ static int vidioc_g_selection(struct file *file, void *prv,
 			      struct v4l2_selection *s)
 {
 	struct dma2d_ctx *ctx = prv;
-	struct dma2d_frame *f;
+	struct dma2d_frame *frm;
 	
-	f = get_frame(ctx, s->type);
-	if (IS_ERR(f))
-		return PTR_ERR(f);
+	frm = get_frame(ctx, s->type);
+	if (IS_ERR(frm))
+		return PTR_ERR(frm);
 
 	switch (s->target) {
 	case V4L2_SEL_TGT_CROP:
@@ -490,10 +493,10 @@ static int vidioc_g_selection(struct file *file, void *prv,
 	switch (s->target) {
 	case V4L2_SEL_TGT_CROP:
 	case V4L2_SEL_TGT_COMPOSE:
-		s->r.left = f->o_height;
-		s->r.top = f->o_width;
-		s->r.width = f->c_width;
-		s->r.height = f->c_height;
+		s->r.left = frm->o_height;
+		s->r.top = frm->o_width;
+		s->r.width = frm->c_width;
+		s->r.height = frm->c_height;
 		break;
 	case V4L2_SEL_TGT_CROP_DEFAULT:
 	case V4L2_SEL_TGT_CROP_BOUNDS:
@@ -501,8 +504,8 @@ static int vidioc_g_selection(struct file *file, void *prv,
 	case V4L2_SEL_TGT_COMPOSE_BOUNDS:
 		s->r.left = 0;
 		s->r.top = 0;
-		s->r.width = f->width;
-		s->r.height = f->height;
+		s->r.width = frm->width;
+		s->r.height = frm->height;
 		break;
 	default:
 		return -EINVAL;
@@ -516,11 +519,11 @@ static int vidioc_try_selection(struct file *file, void *prv,
 {
 	struct dma2d_ctx *ctx = prv;
 	struct dma2d_dev *dev = ctx->dev;
-	struct dma2d_frame *f;
+	struct dma2d_frame *frm;
 
-	f = get_frame(ctx, s->type);
-	if (IS_ERR(f))
-		return PTR_ERR(f);
+	frm = get_frame(ctx, s->type);
+	if (IS_ERR(frm))
+		return PTR_ERR(frm);
 
 	if (s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
 		if (s->target != V4L2_SEL_TGT_COMPOSE)
@@ -543,25 +546,25 @@ static int vidioc_s_selection(struct file *file, void *prv,
 			      struct v4l2_selection *s)
 {
 	struct dma2d_ctx *ctx = prv;
-	struct dma2d_frame *f;
+	struct dma2d_frame *frm;
 	int ret;
 
 	ret = vidioc_try_selection(file, prv, s);
 	if (ret)
 		return ret;
-	f = get_frame(ctx, s->type);
-	if (IS_ERR(f))
-		return PTR_ERR(f);
+	frm = get_frame(ctx, s->type);
+	if (IS_ERR(frm))
+		return PTR_ERR(frm);
 
-	f->c_width	= s->r.width;
-	f->c_height	= s->r.height;
-	f->o_width	= s->r.left;
-	f->o_height	= s->r.top;
-	f->bottom	= f->o_height + f->c_height;
-	f->right	= f->o_width + f->c_width;
-	f->line_ofs	= f->o_width * f->o_height;
-	ctx->nlr_w	= f->c_width;
-	ctx->nlr_h	= f->c_height;
+	frm->c_width	= s->r.width;
+	frm->c_height	= s->r.height;
+	frm->o_width	= s->r.left;
+	frm->o_height	= s->r.top;
+	frm->bottom	= frm->o_height + frm->c_height;
+	frm->right	= frm->o_width + frm->c_width;
+	frm->line_ofs	= frm->o_width * frm->o_height;
+	frm->width	= frm->c_width;
+	frm->height	= frm->c_height;
 
 	return 0;
 }
@@ -603,7 +606,9 @@ static int vidioc_s_fbuf(struct file *file, void *priv, const struct v4l2_frameb
 	frm->fmt	= fmt;
 	ctx->op_mode	= DMA2D_MODE_M2M_BLEND;	
 	ctx->fb_buf	= *fb;
-	
+	frm->width	= frm->c_width;
+	frm->height	= frm->c_height;
+
 	if (ctx->fb_buf.fmt.bytesperline == 0) {
 		ctx->fb_buf.fmt.bytesperline =
 			ctx->fb_buf.fmt.width * fmt->depth / 8;
@@ -737,8 +742,8 @@ static const struct v4l2_ioctl_ops dma2d_ioctl_ops = {
 	.vidioc_g_selection		= vidioc_g_selection,
 	.vidioc_s_selection		= vidioc_s_selection,
 	
-	.vidioc_g_fbuf			= vidioc_g_fbuf,
-	.vidioc_s_fbuf			= vidioc_s_fbuf,
+	//.vidioc_g_fbuf			= vidioc_g_fbuf,
+	//.vidioc_s_fbuf			= vidioc_s_fbuf,
 
 	.vidioc_subscribe_event = v4l2_ctrl_subscribe_event,
 	.vidioc_unsubscribe_event = v4l2_event_unsubscribe,

@@ -95,16 +95,6 @@ struct dma2d_ctx {
 	 * MODE[17:16] of DMA2D_CR
 	 */
 	enum dma2d_op_mode	op_mode;
-	/*
-	 * pixel per line
-	 * PL[13:0] of DMA2D_NLR register
-	 */
-	u16			nlr_w;
-	/*
-	 * number lines 
-	 * NL[15:0] of DMA2D_NLR register
-	 */
-	u16			nlr_h;
 	u8			alpha_component;
 	struct v4l2_ctrl_handler ctrl_handler;
 	enum v4l2_colorspace	colorspace;
