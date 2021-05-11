@@ -75,10 +75,12 @@ static struct dma2d_frame def_frame = {
 static struct dma2d_fmt *find_fmt(int pixelformat)
 {
 	unsigned int i;
+
 	for (i = 0; i < NUM_FORMATS; i++) {
 		if (formats[i].fourcc == pixelformat)
 			return &formats[i];
 	}
+
 	return NULL;
 }
 
@@ -101,7 +103,7 @@ static int dma2d_queue_setup(struct vb2_queue *vq,
 {
 	struct dma2d_ctx *ctx = vb2_get_drv_priv(vq);
 	struct dma2d_frame *f = get_frame(ctx, vq->type);
-	//WARN_ON(1);
+
 	if (IS_ERR(f))
 		return PTR_ERR(f);
 
@@ -118,10 +120,12 @@ static int dma2d_buf_prepare(struct vb2_buffer *vb)
 {
 	struct dma2d_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
 	struct dma2d_frame *f = get_frame(ctx, vb->vb2_queue->type);
+
 	if (IS_ERR(f))
 		return PTR_ERR(f);
 	
 	vb2_set_plane_payload(vb, 0, f->size);
+
 	return 0;
 }
 
@@ -129,6 +133,7 @@ static void dma2d_buf_queue(struct vb2_buffer *vb)
 {
 	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
 	struct dma2d_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
+
 	v4l2_m2m_buf_queue(ctx->fh.m2m_ctx, vbuf);
 }
 
@@ -195,18 +200,11 @@ static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 		frm->a_rgb[2] = (ctrl->val >> 16) & 0xff;
 		frm->a_rgb[1] = (ctrl->val >>  8) & 0xff;
 		frm->a_rgb[0] = ctrl->val & 0xff;
-		printk("%s: set to r2m 2mode %x\r\n", __func__, ctrl->val);
 		break;
 	case V4L2_CID_DMA2D_R2M_MODE:
-		if (ctrl->val) {
-			printk("%s: set to r2m mode %d\r\n", __func__,
-					__LINE__);
+		if (ctrl->val)
 			ctx->op_mode = DMA2D_MODE_R2M;
-		} else
-			printk("%s: set to non r2m mode %d\r\n", __func__,
-					__LINE__);
 		break;
-
 	default:
 		v4l2_err(&ctx->dev->v4l2_dev, "Invalid control\n");
 		spin_unlock_irqrestore(&ctx->dev->ctrl_lock, flags);
@@ -214,6 +212,7 @@ static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 
 	}
 	spin_unlock_irqrestore(&ctx->dev->ctrl_lock, flags);
+
 	return 0;
 }
 
@@ -277,6 +276,7 @@ static int dma2d_open(struct file *file)
 		kfree(ctx);
 		return -ERESTARTSYS;
 	}
+
 	ctx->fh.m2m_ctx = v4l2_m2m_ctx_init(dev->m2m_dev, ctx, &queue_init);
 	if (IS_ERR(ctx->fh.m2m_ctx)) {
 		ret = PTR_ERR(ctx->fh.m2m_ctx);
@@ -284,6 +284,7 @@ static int dma2d_open(struct file *file)
 		kfree(ctx);
 		return ret;
 	}
+
 	v4l2_fh_init(&ctx->fh, video_devdata(file));
 	file->private_data = &ctx->fh;
 	v4l2_fh_add(&ctx->fh);
@@ -296,23 +297,24 @@ static int dma2d_open(struct file *file)
 	ctx->fh.ctrl_handler = &ctx->ctrl_handler;
 	mutex_unlock(&dev->mutex);
 
-	//v4l2_info(&dev->v4l2_dev, "instance opened\n");
 	return 0;
 }
 
 static int dma2d_release(struct file *file)
 {
-	//struct dma2d_dev *dev = video_drvdata(file);
+	struct dma2d_dev *dev = video_drvdata(file);
 	struct dma2d_ctx *ctx = fh2ctx(file->private_data);
 
 	v4l2_ctrl_handler_free(&ctx->ctrl_handler);
 	v4l2_fh_del(&ctx->fh);
 	v4l2_fh_exit(&ctx->fh);
+	mutex_lock(&dev->mutex);
+	v4l2_m2m_ctx_release(ctx->fh.m2m_ctx);
+	mutex_unlock(&dev->mutex);
 	kfree(ctx);
-	//v4l2_info(&dev->v4l2_dev, "instance closed\n");
+
 	return 0;
 }
-
 
 static int vidioc_querycap(struct file *file, void *priv,
 				struct v4l2_capability *cap)
@@ -320,6 +322,7 @@ static int vidioc_querycap(struct file *file, void *priv,
 	strscpy(cap->driver, DMA2D_NAME, sizeof(cap->driver));
 	strscpy(cap->card, DMA2D_NAME, sizeof(cap->card));
 	strscpy(cap->bus_info, BUS_INFO, sizeof(cap->bus_info));
+
 	return 0;
 }
 
@@ -328,6 +331,7 @@ static int vidioc_enum_fmt(struct file *file, void *prv, struct v4l2_fmtdesc *f)
 	if (f->index >= NUM_FORMATS)
 		return -EINVAL;
 	f->pixelformat = formats[f->index].fourcc;
+
 	return 0;
 }
 
@@ -355,6 +359,7 @@ static int vidioc_g_fmt(struct file *file, void *prv, struct v4l2_format *f)
 	f->fmt.pix.xfer_func		= ctx->xfer_func;
 	f->fmt.pix.ycbcr_enc		= ctx->ycbcr_enc;
 	f->fmt.pix.quantization		= ctx->quant;
+
 	return 0;
 }
 
@@ -394,6 +399,7 @@ static int vidioc_try_fmt(struct file *file, void *prv, struct v4l2_format *f)
 	}
 	f->fmt.pix.bytesperline = (f->fmt.pix.width * fmt->depth) >> 3;
 	f->fmt.pix.sizeimage = f->fmt.pix.height * f->fmt.pix.bytesperline;
+
 	return 0;
 }
 
@@ -501,6 +507,7 @@ static int vidioc_g_selection(struct file *file, void *prv,
 	default:
 		return -EINVAL;
 	}
+
 	return 0;
 }
 
@@ -555,6 +562,7 @@ static int vidioc_s_selection(struct file *file, void *prv,
 	f->line_ofs	= f->o_width * f->o_height;
 	ctx->nlr_w	= f->c_width;
 	ctx->nlr_h	= f->c_height;
+
 	return 0;
 }
 
@@ -565,6 +573,7 @@ static int vidioc_g_fbuf(struct file *file, void *priv, struct v4l2_framebuffer 
 
 	*fb = ctx->fb_buf;
 	fb->capability = V4L2_FBUF_CAP_LIST_CLIPPING;
+
 	return 0;
 }
 
@@ -599,6 +608,7 @@ static int vidioc_s_fbuf(struct file *file, void *priv, const struct v4l2_frameb
 		ctx->fb_buf.fmt.bytesperline =
 			ctx->fb_buf.fmt.width * fmt->depth / 8;
 	}
+
 	return 0;
 }
 
@@ -609,46 +619,43 @@ static void device_run(void *prv)
 	struct dma2d_frame *frm = &ctx->out;
 	struct vb2_v4l2_buffer *src, *dst;
 	unsigned long flags;
-	printk("%s %d\r\n", __func__, __LINE__);
-	spin_lock_irqsave(&dev->ctrl_lock, flags);
 
-	printk("%s %d\r\n", __func__, __LINE__);
+	spin_lock_irqsave(&dev->ctrl_lock, flags);
 	dev->curr = ctx;
 
+	src = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
 	dst = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
-	if (dst == NULL)
-		goto END;
-	printk("%s %d\r\n", __func__, __LINE__);
+	if (dst == NULL || src == NULL) {
+		spin_unlock_irqrestore(&dev->ctrl_lock, flags);
+		return;
+	}
 
 	clk_enable(dev->gate);
 	printk("ctx->opmode %d\r\n", ctx->op_mode);
-	if (ctx->op_mode != DMA2D_MODE_R2M) {
-		src = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
-		dma2d_config_fg(dev, &ctx->fg,
-			vb2_dma_contig_plane_dma_addr(&src->vb2_buf, 0));
 	
-		if (ctx->op_mode == DMA2D_MODE_M2M_BLEND) {
-			if (ctx->alpha_component != 0) {
-				ctx->bg.a_rgb[3] = ctx->alpha_component;
-				ctx->bg.a_mode = DMA2D_ALPHA_MODE_REPLACE; 
-			}
-			dma2d_config_bg(dev, &ctx->bg,
-					(dma_addr_t)ctx->fb_buf.base);
-		} else {
-			if (ctx->fg.fmt->fourcc == ctx->out.fmt->fourcc)
-				ctx->op_mode = DMA2D_MODE_M2M;
-			else
-				ctx->op_mode = DMA2D_MODE_M2M_FPC;
+	dma2d_config_fg(dev, &ctx->fg,
+		vb2_dma_contig_plane_dma_addr(&src->vb2_buf, 0));
+	
+	if (ctx->op_mode == DMA2D_MODE_M2M_BLEND) {
+		if (ctx->alpha_component != 0) {
+			ctx->bg.a_rgb[3] = ctx->alpha_component;
+			ctx->bg.a_mode = DMA2D_ALPHA_MODE_REPLACE; 
 		}
+		dma2d_config_bg(dev, &ctx->bg,
+				(dma_addr_t)ctx->fb_buf.base);
+	} else if (ctx->op_mode != DMA2D_MODE_R2M){
+		if (ctx->fg.fmt->fourcc == ctx->out.fmt->fourcc)
+			ctx->op_mode = DMA2D_MODE_M2M;
+		else
+			ctx->op_mode = DMA2D_MODE_M2M_FPC;
 	}
 
-	dma2d_config_common(dev, ctx->op_mode, frm->width, frm->height);
 	dma2d_config_out(dev, &ctx->out,
 			vb2_dma_contig_plane_dma_addr(&dst->vb2_buf, 0));
+	dma2d_config_common(dev, ctx->op_mode, frm->width, frm->height);
 
 	dma2d_start(dev);
 
-END:
 	spin_unlock_irqrestore(&dev->ctrl_lock, flags);
 }
 
@@ -665,27 +672,19 @@ static irqreturn_t dma2d_isr(int irq, void *prv)
 		clk_disable(dev->gate);
 
 		BUG_ON(ctx == NULL);
-		//if (ctx->op_mode != DMA2D_MODE_R2M)
-		src = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
 
+		src = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
 		dst = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
 		
 		BUG_ON(dst == NULL);
+		BUG_ON(src == NULL);
 
-		if (ctx->op_mode != DMA2D_MODE_R2M) {
-			BUG_ON(src == NULL);
+		//dst->timecode = src->timecode;
+		//dst->vb2_buf.timestamp = src->vb2_buf.timestamp;
+		//dst->flags &= ~V4L2_BUF_FLAG_TSTAMP_SRC_MASK;
+		//dst->flags |= src->flags & V4L2_BUF_FLAG_TSTAMP_SRC_MASK;
 
-			dst->timecode = src->timecode;
-			dst->vb2_buf.timestamp = src->vb2_buf.timestamp;
-			dst->flags &= ~V4L2_BUF_FLAG_TSTAMP_SRC_MASK;
-			dst->flags |=
-				src->flags & V4L2_BUF_FLAG_TSTAMP_SRC_MASK;
-
-			v4l2_m2m_buf_done(src, VB2_BUF_STATE_DONE);
-		} else {
-			dst->vb2_buf.timestamp = 0;
-			dst->flags = V4L2_BUF_FLAG_TSTAMP_SRC_MASK;
-		}
+		v4l2_m2m_buf_done(src, VB2_BUF_STATE_DONE);
 		v4l2_m2m_buf_done(dst, VB2_BUF_STATE_DONE);
 		v4l2_m2m_job_finish(dev->m2m_dev, ctx->fh.m2m_ctx);
 
@@ -695,6 +694,7 @@ static irqreturn_t dma2d_isr(int irq, void *prv)
 //				dma2d_get_int(dev));
 		dma2d_clear_int(dev);
 	}
+
 	return IRQ_HANDLED;
 }
 
@@ -814,12 +814,14 @@ static int dma2d_probe(struct platform_device *pdev)
 	ret = v4l2_device_register(&pdev->dev, &dev->v4l2_dev);
 	if (ret)
 		goto unprep_clk_gate;
+
 	vfd = video_device_alloc();
 	if (!vfd) {
 		v4l2_err(&dev->v4l2_dev, "Failed to allocate video device\n");
 		ret = -ENOMEM;
 		goto unreg_v4l2_dev;
 	}
+
 	*vfd = dma2d_videodev;
 	set_bit(V4L2_FL_QUIRK_INVERTED_CROP, &vfd->flags);
 	vfd->lock = &dev->mutex;
@@ -830,6 +832,7 @@ static int dma2d_probe(struct platform_device *pdev)
 		v4l2_err(&dev->v4l2_dev, "Failed to register video device\n");
 		goto rel_vdev;
 	}
+
 	video_set_drvdata(vfd, dev);
 	dev->vfd = vfd;
 	v4l2_info(&dev->v4l2_dev, "device registered as /dev/video%d\n",
@@ -841,6 +844,7 @@ static int dma2d_probe(struct platform_device *pdev)
 		ret = PTR_ERR(dev->m2m_dev);
 		goto unreg_video_dev;
 	}
+
 	v4l2_info(&dev->v4l2_dev, "stm32 dma2d initialized\n");
 	return 0;
 
@@ -869,6 +873,7 @@ static int dma2d_remove(struct platform_device *pdev)
 	vb2_dma_contig_clear_max_seg_size(&pdev->dev);
 	clk_unprepare(dev->gate);
 	clk_put(dev->gate);
+
 	return 0;
 }
 
