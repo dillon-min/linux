@@ -67,7 +67,7 @@ static inline void reg_update_bits(void __iomem *base, u32 reg, u32 mask,
 
 void dma2d_start(struct dma2d_dev *d)
 {
-	dump_regs(d);
+//	dump_regs(d);
 	reg_update_bits(d->regs, DMA2D_CR_REG, CR_START, CR_START);
 }
 

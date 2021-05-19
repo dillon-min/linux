@@ -110,11 +110,27 @@ static int dma2d_queue_setup(struct vb2_queue *vq,
 	if (IS_ERR(f))
 		return PTR_ERR(f);
 
+	if (*nplanes)
+		return sizes[0] < f->size ? -EINVAL : 0;
+
 	sizes[0] = f->size;
 	*nplanes = 1;
 
 	if (*nbuffers == 0)
 		*nbuffers = 1;
+
+	return 0;
+}
+
+static int dma2d_buf_out_validate(struct vb2_buffer *vb)
+{
+	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
+
+	if (vbuf->field == V4L2_FIELD_ANY)
+		vbuf->field = V4L2_FIELD_NONE;
+	if (vbuf->field != V4L2_FIELD_NONE) {
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -127,6 +143,10 @@ static int dma2d_buf_prepare(struct vb2_buffer *vb)
 	if (IS_ERR(f))
 		return PTR_ERR(f);
 	
+	if (vb2_plane_size(vb, 0) < f->size) {
+		return -EINVAL;
+	}
+
 	vb2_set_plane_payload(vb, 0, f->size);
 
 	return 0;
@@ -140,10 +160,41 @@ static void dma2d_buf_queue(struct vb2_buffer *vb)
 	v4l2_m2m_buf_queue(ctx->fh.m2m_ctx, vbuf);
 }
 
+static int dma2d_start_streaming(struct vb2_queue *q, unsigned int count)
+{
+	struct dma2d_ctx *ctx = vb2_get_drv_priv(q);
+	struct dma2d_frame *f = get_frame(ctx, q->type);
+
+	if (IS_ERR(f))
+		return -EINVAL;
+
+	f->sequence = 0;
+	return 0;
+}
+
+static void dma2d_stop_streaming(struct vb2_queue *q)
+{
+	struct dma2d_ctx *ctx = vb2_get_drv_priv(q);
+	struct vb2_v4l2_buffer *vbuf;
+
+	for (;;) {
+		if (V4L2_TYPE_IS_OUTPUT(q->type))
+			vbuf = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
+		else
+			vbuf = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
+		if (!vbuf)
+			return;
+		v4l2_m2m_buf_done(vbuf, VB2_BUF_STATE_ERROR);
+	}
+}
+
 static const struct vb2_ops dma2d_qops = {
 	.queue_setup	= dma2d_queue_setup,
+	.buf_out_validate	 = dma2d_buf_out_validate,
 	.buf_prepare	= dma2d_buf_prepare,
 	.buf_queue	= dma2d_buf_queue,
+	.start_streaming = dma2d_start_streaming,
+	.stop_streaming  = dma2d_stop_streaming,
 	.wait_prepare	= vb2_ops_wait_prepare,
 	.wait_finish	= vb2_ops_wait_finish,
 };
@@ -155,7 +206,7 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
 	int ret;
 	
 	src_vq->type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-	src_vq->io_modes = VB2_MMAP | VB2_USERPTR;
+	src_vq->io_modes = VB2_MMAP | VB2_DMABUF;
 	src_vq->drv_priv = ctx;
 	src_vq->ops = &dma2d_qops;
 	src_vq->mem_ops = &vb2_dma_contig_memops;
@@ -169,7 +220,7 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
 		return ret;
 
 	dst_vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	dst_vq->io_modes = VB2_MMAP | VB2_USERPTR;
+	dst_vq->io_modes = VB2_MMAP | VB2_DMABUF;
 	dst_vq->drv_priv = ctx;
 	dst_vq->ops = &dma2d_qops;
 	dst_vq->mem_ops = &vb2_dma_contig_memops;
@@ -195,10 +246,10 @@ static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_ALPHA_COMPONENT:
 		/* set the background alpha value*/
 		ctx->alpha_component = (u8) ctrl->val;
-		printk("%s: set to alpha mode %d\r\n", __func__, ctrl->val);
+		//printk("%s: set to alpha mode %d\r\n", __func__, ctrl->val);
 		break;
 	case V4L2_CID_DMA2D_R2M_COLOR:
-		printk("%s %d\r\n", __func__, __LINE__);
+		//printk("%s %d\r\n", __func__, __LINE__);
 		frm = get_frame(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
 		frm->a_rgb[3] = (ctrl->val >> 24) & 0xff;
 		frm->a_rgb[2] = (ctrl->val >> 16) & 0xff;
@@ -208,7 +259,7 @@ static int dma2d_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_DMA2D_R2M_MODE:
 		if (ctrl->val)
 			ctx->op_mode = DMA2D_MODE_R2M;
-		printk("%s %d\r\n", __func__, __LINE__);
+		//printk("%s %d\r\n", __func__, __LINE__);
 		break;
 	default:
 		v4l2_err(&ctx->dev->v4l2_dev, "Invalid control\n");
@@ -335,8 +386,8 @@ static int vidioc_enum_fmt(struct file *file, void *prv, struct v4l2_fmtdesc *f)
 {
 	if (f->index >= NUM_FORMATS)
 		return -EINVAL;
-	f->pixelformat = formats[f->index].fourcc;
 
+	f->pixelformat = formats[f->index].fourcc;
 	return 0;
 }
 
@@ -371,12 +422,20 @@ static int vidioc_g_fmt(struct file *file, void *prv, struct v4l2_format *f)
 static int vidioc_try_fmt(struct file *file, void *prv, struct v4l2_format *f)
 {
 	struct dma2d_ctx *ctx = prv;
+	//struct dma2d_dev *dev = ctx->dev;
 	struct dma2d_fmt *fmt;
 	enum v4l2_field *field;
+	u32 fourcc = f->fmt.pix.pixelformat;
 
-	fmt = find_fmt(f->fmt.pix.pixelformat);
-	if (!fmt)
-		return -EINVAL;
+	fmt = find_fmt(fourcc);
+	if (!fmt) {
+		//v4l2_warn(&dev->v4l2_dev,
+		//	"Format not supported: %c%c%c%c, use the default.\n",
+		//	(fourcc & 0xff),  (fourcc >>  8) & 0xff,
+		//	(fourcc >> 16) & 0xff, (fourcc >> 24) & 0xff);
+		f->fmt.pix.pixelformat = formats[0].fourcc; 
+		fmt = find_fmt(f->fmt.pix.pixelformat);
+	}
 
 	field = &f->fmt.pix.field;
 	if (*field == V4L2_FIELD_ANY)
@@ -422,20 +481,21 @@ static int vidioc_s_fmt(struct file *file, void *prv, struct v4l2_format *f)
 	ret = vidioc_try_fmt(file, prv, f);
 	if (ret)
 		return ret;
+
 	vq = v4l2_m2m_get_vq(ctx->fh.m2m_ctx, f->type);
 	if (vb2_is_busy(vq)) {
 		v4l2_err(&dev->v4l2_dev, "queue (%d) bust\n", f->type);
 		return -EBUSY;
 	}
-	
+
 	frm = get_frame(ctx, f->type);
 	if (IS_ERR(frm))
 		return PTR_ERR(frm);
-	
+
 	fmt = find_fmt(f->fmt.pix.pixelformat);
 	if (!fmt)
 		return -EINVAL;
-	
+
 	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
 		ctx->colorspace = f->fmt.pix.colorspace;
 		ctx->xfer_func = f->fmt.pix.xfer_func;
@@ -621,24 +681,31 @@ static void device_run(void *prv)
 {
 	struct dma2d_ctx *ctx = prv;
 	struct dma2d_dev *dev = ctx->dev;
-	struct dma2d_frame *frm = &ctx->out;
+	struct dma2d_frame *frm_out, *frm_cap;// = &ctx->out;
 	struct vb2_v4l2_buffer *src, *dst;
 	unsigned long flags;
-
 	spin_lock_irqsave(&dev->ctrl_lock, flags);
 	dev->curr = ctx;
 
 	src = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
 	dst = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
 	if (dst == NULL || src == NULL) {
-		spin_unlock_irqrestore(&dev->ctrl_lock, flags);
-		return;
+		goto end;
 	}
 
+	frm_cap = get_frame(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
+	frm_out = get_frame(ctx, V4L2_BUF_TYPE_VIDEO_OUTPUT);
+	if (!frm_cap || !frm_out)
+		goto end;
+
+	src->sequence = frm_out->sequence++;
+	dst->sequence = frm_cap->sequence++;
+	v4l2_m2m_buf_copy_metadata(src, dst, true);
+
 	clk_enable(dev->gate);
-	printk("ctx->opmode %d\r\n", ctx->op_mode);
+	//printk("ctx->opmode %d\r\n", ctx->op_mode);
 	
-	dma2d_config_fg(dev, &ctx->fg,
+	dma2d_config_fg(dev, frm_out,
 		vb2_dma_contig_plane_dma_addr(&src->vb2_buf, 0));
 	
 	if (ctx->op_mode == DMA2D_MODE_M2M_BLEND) {
@@ -649,18 +716,18 @@ static void device_run(void *prv)
 		dma2d_config_bg(dev, &ctx->bg,
 				(dma_addr_t)ctx->fb_buf.base);
 	} else if (ctx->op_mode != DMA2D_MODE_R2M){
-		if (ctx->fg.fmt->fourcc == ctx->out.fmt->fourcc)
+		if (frm_out->fmt->fourcc == frm_cap->fmt->fourcc)
 			ctx->op_mode = DMA2D_MODE_M2M;
 		else
 			ctx->op_mode = DMA2D_MODE_M2M_FPC;
 	}
 
-	dma2d_config_out(dev, &ctx->out,
+	dma2d_config_out(dev, frm_cap,
 			vb2_dma_contig_plane_dma_addr(&dst->vb2_buf, 0));
-	dma2d_config_common(dev, ctx->op_mode, frm->width, frm->height);
+	dma2d_config_common(dev, ctx->op_mode, frm_cap->width, frm_cap->height);
 
 	dma2d_start(dev);
-
+end:
 	spin_unlock_irqrestore(&dev->ctrl_lock, flags);
 }
 
@@ -670,8 +737,8 @@ static irqreturn_t dma2d_isr(int irq, void *prv)
 	struct dma2d_ctx *ctx = dev->curr;
 	struct vb2_v4l2_buffer *src, *dst;
 	uint32_t s = dma2d_get_int(dev);
-	v4l2_info(&dev->v4l2_dev, "dma2d isr %x\n",
-			s);
+	//v4l2_info(&dev->v4l2_dev, "dma2d isr %x\n",
+		//	s);
 	if (s & ISR_TCIF || s == 0) {
 		dma2d_clear_int(dev);
 		clk_disable(dev->gate);
@@ -739,8 +806,8 @@ static const struct v4l2_ioctl_ops dma2d_ioctl_ops = {
 	.vidioc_streamon		= v4l2_m2m_ioctl_streamon,
 	.vidioc_streamoff		= v4l2_m2m_ioctl_streamoff,
 
-	.vidioc_g_selection		= vidioc_g_selection,
-	.vidioc_s_selection		= vidioc_s_selection,
+	//.vidioc_g_selection		= vidioc_g_selection,
+	//.vidioc_s_selection		= vidioc_s_selection,
 	
 	//.vidioc_g_fbuf			= vidioc_g_fbuf,
 	//.vidioc_s_fbuf			= vidioc_s_fbuf,

@@ -81,6 +81,7 @@ struct dma2d_frame {
 	 */
 	enum dma2d_alpha_mode a_mode;
 	u32 size;
+	unsigned int		sequence;
 };
 
 struct dma2d_ctx {
