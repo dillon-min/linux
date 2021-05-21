@@ -71,7 +71,7 @@
 		linux,cma {
 			compatible = "shared-dma-pool";
 			no-map;
-			size = <0x100000>;
+			size = <0x300000>;
 			linux,dma-default;
 		};
 	};
@@ -121,6 +121,14 @@
 };
 
 &dma2 {
+	status = "okay";
+};
+
+&dma2d {
+	status = "okay";
+};
+
+&dmamux1 {
 	status = "okay";
 };
 

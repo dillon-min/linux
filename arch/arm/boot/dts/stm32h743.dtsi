@@ -288,6 +288,16 @@
 			status = "disabled";
 		};
 
+		dma2d: dma2d@52001000 {
+			compatible = "st,stm32-dma2d";
+			reg = <0x52001000 0x1000>;
+			interrupts = <90>;
+			resets = <&rcc STM32H7_AHB3_RESET(DMA2D)>;
+			clocks = <&rcc DMA2D_CK>;
+			clock-names = "dma2d";
+			status = "disabled";
+		};
+
 		dmamux1: dma-router@40020800 {
 			compatible = "st,stm32h7-dmamux";
 			reg = <0x40020800 0x40>;
