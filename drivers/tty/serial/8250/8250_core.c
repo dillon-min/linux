@@ -700,7 +700,7 @@ console_initcall(univ8250_console_init);
 static struct uart_driver serial8250_reg = {
 	.owner			= THIS_MODULE,
 	.driver_name		= "serial",
-	.dev_name		= "ttyS",
+	.dev_name		= "ttyO",
 	.major			= TTY_MAJOR,
 	.minor			= 64,
 	.cons			= SERIAL8250_CONSOLE,

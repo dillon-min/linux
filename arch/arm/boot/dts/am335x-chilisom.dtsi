@@ -148,7 +148,8 @@
 		interrupts = <0 IRQ_TYPE_NONE>, /* fifoevent */
 			     <1 IRQ_TYPE_NONE>;	/* termcount */
 		rb-gpios = <&gpmc 0 GPIO_ACTIVE_HIGH>; /* gpmc_wait0 */
-		ti,nand-ecc-opt = "bch8";
+		ti,nand-xfer-type = "prefetch-dma";
+		ti,nand-ecc-opt = "bch16";
 		ti,elm-id = <&elm>;
 		nand-bus-width = <8>;
 		gpmc,device-width = <1>;
@@ -171,5 +172,43 @@
 		gpmc,clk-activation-ns = <0>;
 		gpmc,wr-access-ns = <40>;
 		gpmc,wr-data-mux-bus-ns = <0>;
+		/* MTD partition table */
+		/* All SPL-* partitions are sized to minimal length
+		 * which can be independently programmable. For
+		 * NAND flash this is equal to size of erase-block */
+		#address-cells = <1>;
+		#size-cells = <1>;
+		partition@0 {
+			label = "NAND.SPL";
+			reg = <0x00000000 0x00200000>;
+		};
+		partition@1 {
+			label = "NAND.SPL.backup1";
+			reg = <0x00200000 0x00200000>;
+		};
+		partition@2 {
+			label = "NAND.SPL.backup2";
+			reg = <0x00400000 0x00200000>;
+		};
+		partition@3 {
+			label = "NAND.SPL.backup3";
+			reg = <0x00600000 0x00200000>;
+		};
+		partition@4 {
+			label = "NAND.u-boot";
+			reg = <0x00800000 0x00200000>;
+		};
+		partition@5 {
+			label = "NAND.u-boot-env";
+			reg = <0x00a00000 0x00200000>;
+		};
+		partition@6 {
+			label = "NAND.kernel";
+			reg = <0x00c00000 0x00800000>;
+		};
+		partition@7 {
+			label = "NAND.file-system";
+			reg = <0x01400000 0x3ec00000>;
+		};
 	};
 };
