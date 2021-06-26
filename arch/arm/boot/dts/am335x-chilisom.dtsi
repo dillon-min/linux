@@ -58,6 +58,12 @@
 			AM33XX_PADCONF(AM335X_PIN_GPMC_BEN0_CLE, PIN_OUTPUT_PULLUP, MUX_MODE0)
 		>;
 	};
+
+	rtc_pins: rtcgrp {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_GPMC_CLK, PIN_INPUT, MUX_MODE7)
+		>;
+	};
 };
 
 &i2c0 {
@@ -83,6 +89,10 @@
 	rtc@32 {
 		compatible = "epson,rx8010";
 		reg = <0x32>;
+		/*pinctrl-names = "default";
+		pinctrl-0 = <&rtc_pins>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <1 IRQ_TYPE_EDGE_FALLING>;*/
 	};
 
 	iio@48 {
@@ -149,7 +159,7 @@
 
 	pinctrl-0 = <&ext_wakeup>;
 	pinctrl-names = "default";
-
+	status = "disabled";
 	ext_wakeup: ext-wakeup {
 		pins = "ext_wakeup0";
 		input-enable;
