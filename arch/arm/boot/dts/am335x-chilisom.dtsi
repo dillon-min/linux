@@ -96,7 +96,7 @@
 	};
 
 	adc@48 {
-		compatible = "microchip,mcp3422";
+		compatible = "ti,ads1100";
 		reg = <0x48>;
 	};
 };
