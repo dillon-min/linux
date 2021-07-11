@@ -127,7 +127,7 @@ static ssize_t show_in(struct device *dev, struct device_attribute *da,
     if (res < 0)
 	return res;
 
-    return sprintf(buf, "%d\n", ads1000_reg_to_mv(priv, res));
+    return sprintf(buf, "%d\n", res);//ads1000_reg_to_mv(priv, res));
 }
 
 static SENSOR_DEVICE_ATTR(in0_input, 0444, show_in, NULL, 0);
