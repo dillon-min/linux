@@ -94,7 +94,8 @@ static int ads1000_read_adc(struct ads1000 *priv)
     res = ((u16)data[0] << 8) | data[1];
 err_unlock:
     mutex_unlock(&priv->update_lock);
-
+    //printk("res: %04x\n", res);
+    msleep(10);
     return res;
 }
 
