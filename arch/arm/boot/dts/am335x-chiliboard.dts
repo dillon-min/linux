@@ -22,15 +22,16 @@
 
 		led0 {
 			label = "led0";
-			gpios = <&gpio3 7 GPIO_ACTIVE_LOW>;
-			default-state = "keep";
+			gpios = <&gpio1 30 GPIO_ACTIVE_LOW>;
+			default-state = "on";
 			linux,default-trigger = "heartbeat";
 		};
 
 		led1 {
 			label = "led1";
-			gpios = <&gpio3 8 GPIO_ACTIVE_LOW>;
-			default-state = "keep";
+			gpios = <&gpio1 31 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+			linux,default-trigger = "heartbeat";
 		};
 	};
 };
@@ -114,8 +115,8 @@
 
 	led_gpio_pins: led_gpio_pins {
 		pinctrl-single,pins = <
-			AM33XX_PADCONF(AM335X_PIN_EMU0, PIN_OUTPUT, MUX_MODE7) /* emu0.gpio3_7 */
-			AM33XX_PADCONF(AM335X_PIN_EMU1, PIN_OUTPUT, MUX_MODE7) /* emu1.gpio3_8 */
+			AM33XX_PADCONF(AM335X_PIN_GPMC_CSN1, PIN_OUTPUT, MUX_MODE7) /* gpmc_csn1.gpio1_30 */
+			AM33XX_PADCONF(AM335X_PIN_GPMC_CSN2, PIN_OUTPUT, MUX_MODE7) /* gpmc_csn2.gpio1_31 */
 		>;
 	};
 };
