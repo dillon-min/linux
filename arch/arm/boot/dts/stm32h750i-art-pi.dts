@@ -124,6 +124,10 @@
 	status = "okay";
 };
 
+&jpeg_codec {
+	status = "okay";
+};
+
 &mac {
 	status = "disabled";
 	pinctrl-0	= <&ethernet_rmii>;
