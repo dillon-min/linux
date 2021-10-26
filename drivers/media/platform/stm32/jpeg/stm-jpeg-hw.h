@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
- * i.MX8QXP/i.MX8QM JPEG encoder/decoder v4l2 driver
+ * STM32F7/H7 JPEG encoder/decoder v4l2 driver
  *
- * Copyright 2018-2019 NXP
+ * Copyright 2021 Dillon Min <dillon.minfei@gmail.com>
  */
 
-#ifndef _MXC_JPEG_HW_H
-#define _MXC_JPEG_HW_H
-
+#ifndef _STM_JPEG_HW_H
+#define _STM_JPEG_HW_H
+#if 0
 /* JPEG Decoder/Encoder Wrapper Register Map */
 #define GLB_CTRL			0x0
 #define COM_STATUS			0x4
@@ -98,6 +98,25 @@
 
 /* JPEG-Decoder Wrapper - STM_CTRL Register Fields */
 #define MXC_PIXEL_PRECISION(precision) ((precision) / 8 << 2)
+#else
+#define	JPEG_CONF_REG0		0x0000
+#define	JPEG_CONF_REG1		0x0004
+#define	JPEG_CONF_REG2		0x0008
+#define	JPEG_CONF_REG3		0x000c
+#define	JPEG_CONF_REG4		0x0010
+#define	JPEG_CONF_REG5		0x0014
+#define	JPEG_CONF_REG6		0x0018
+#define	JPEG_CONF_REG7		0x001c
+#define	JPEG_CR_REG			0x0030
+#define	JPEG_SR_REG			0x0034
+#define	JPEG_CFR_REG		0x0038
+#define	JPEG_DIR_REG		0x0040
+#define	JPEG_DOR_REG		0x0044
+#define JPEG_QMEM0_REG		0x0050
+#define JPEG_QMEM1_REG		0x0090
+#define JPEG_QMEM2_REG		0x00d0
+#define JPEG_QMEM3_REG		0x0110
+#endif
 enum mxc_jpeg_image_format {
 	MXC_JPEG_INVALID = -1,
 	MXC_JPEG_YUV420 = 0x0, /* 2 Plannar, Y=1st plane UV=2nd plane */
