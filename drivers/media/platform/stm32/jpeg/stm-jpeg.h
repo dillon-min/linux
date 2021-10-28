@@ -11,7 +11,7 @@
 
 #ifndef _MXC_JPEG_CORE_H
 #define _MXC_JPEG_CORE_H
-
+#if 0
 #define MXC_JPEG_NAME			"mxc-jpeg"
 #define MXC_JPEG_FMT_TYPE_ENC		0
 #define MXC_JPEG_FMT_TYPE_RAW		1
@@ -176,5 +176,7 @@ struct mxc_jpeg_sos {
 	struct mxc_jpeg_sos_comp comp[MXC_JPEG_MAX_COMPONENTS];
 	u8 ignorable_bytes[3];
 } __packed;
-
+#else
+#define STM_JPEG_NAME			"stm32-jpeg"
+#endif
 #endif

@@ -98,25 +98,6 @@
 
 /* JPEG-Decoder Wrapper - STM_CTRL Register Fields */
 #define MXC_PIXEL_PRECISION(precision) ((precision) / 8 << 2)
-#else
-#define	JPEG_CONF_REG0		0x0000
-#define	JPEG_CONF_REG1		0x0004
-#define	JPEG_CONF_REG2		0x0008
-#define	JPEG_CONF_REG3		0x000c
-#define	JPEG_CONF_REG4		0x0010
-#define	JPEG_CONF_REG5		0x0014
-#define	JPEG_CONF_REG6		0x0018
-#define	JPEG_CONF_REG7		0x001c
-#define	JPEG_CR_REG			0x0030
-#define	JPEG_SR_REG			0x0034
-#define	JPEG_CFR_REG		0x0038
-#define	JPEG_DIR_REG		0x0040
-#define	JPEG_DOR_REG		0x0044
-#define JPEG_QMEM0_REG		0x0050
-#define JPEG_QMEM1_REG		0x0090
-#define JPEG_QMEM2_REG		0x00d0
-#define JPEG_QMEM3_REG		0x0110
-#endif
 enum mxc_jpeg_image_format {
 	MXC_JPEG_INVALID = -1,
 	MXC_JPEG_YUV420 = 0x0, /* 2 Plannar, Y=1st plane UV=2nd plane */
@@ -156,4 +137,96 @@ void mxc_jpeg_set_line_pitch(struct mxc_jpeg_desc *desc, u32 line_pitch);
 void mxc_jpeg_set_desc(u32 desc, void __iomem *reg, int slot);
 void mxc_jpeg_set_regs_from_desc(struct mxc_jpeg_desc *desc,
 				 void __iomem *reg);
+#else
+#define	JPEG_REG_CONF0		0x0000
+#define	JPEG_REG_CONF1		0x0004
+#define	JPEG_REG_CONF2		0x0008
+#define	JPEG_REG_CONF3		0x000c
+#define	JPEG_REG_CONF4		0x0010
+#define	JPEG_REG_CONF5		0x0014
+#define	JPEG_REG_CONF6		0x0018
+#define	JPEG_REG_CONF7		0x001c
+#define	JPEG_REG_CR			0x0030
+#define	JPEG_REG_SR			0x0034
+#define	JPEG_REG_CFR		0x0038
+#define	JPEG_REG_DIR		0x0040
+#define	JPEG_REG_DOR		0x0044
+#define JPEG_REG_QMEM0		0x0050
+#define JPEG_REG_QMEM1		0x0090
+#define JPEG_REG_QMEM2		0x00d0
+#define JPEG_REG_QMEM3		0x0110
+#define JPEG_REG_HUFF_MIN	0x0150
+#define JPEG_REG_HUFF_BASE	0x0190
+#define JPEG_REG_HUFF_SYMB	0x0210
+#define JPEG_REG_DHT_MEM	0x0360
+#define JPEG_REG_HUFFENC_AC0	0x0500
+#define JPEG_REG_HUFFENC_AC1	0x0660
+#define JPEG_REG_HUFFENC_DC0	0x07c0
+#define JPEG_REG_HUFFENC_DC1	0x07e0
+
+#define CONFR0_START		BIT(0)
+#define CONFR1_YSIZE_MASK	GENMASK(31, 16)
+#define CONFR1_YSIZE_SHIFT	16
+#define CONFR1_HDR_EN		BIT(8)
+#define CONFR1_NS_MASK		GENMASK(7, 6)
+#define CONFR1_NS_SHIFT		6
+#define CONFR1_CS_MASK		GENMASK(5, 4)
+#define CONFR1_CS_SHIFT		4
+#define CONFR1_DECODE		BIT(3)
+#define CONFR1_NF_MASK		GENMASK(1, 0)
+#define CONFR1_NF_SHIFT		0
+#define CONFR2_NMCU_MASK	GENMASK(25, 0)
+#define CONFR2_NMCU_SHIFT	0
+#define CONFR3_XSIZE_MASK	GENMASK(31, 16)
+#define CONFR3_XSIZE_SHIFT	16
+#define CONFRx_HSF_MASK		GENMASK(15, 12)
+#define CONFRx_HSF_SHIFT	12
+#define CONFRx_VSF_MASK		GENMASK(11, 8)
+#define CONFRx_VSF_SHIFT	8
+#define CONFRx_NB_MASK		GENMASK(7, 4)
+#define CONFRx_NB_SHIFT		4
+#define CONFRx_QT_MASK		GENMASK(3, 2)
+#define CONFRx_QT_SHIFT		2
+#define CONFRx_QT_0			0x00
+#define CONFRx_QT_1			0x01
+#define CONFRx_QT_2			0x02
+#define CONFRx_QT_3			0x03
+#define CONFRx_HA_1			BIT(1)
+#define CONFRx_HD_1			BIT(0)
+#define CR_OFF				BIT(14)
+#define CR_IFF				BIT(13)
+#define CR_HPDIE			BIT(6)
+#define CR_EOCIE			BIT(5)
+#define CR_OFNEIE			BIT(4)
+#define CR_OFTIE			BIT(3)
+#define CR_IFNFIE			BIT(2)
+#define CR_IFTIE			BIT(1)
+#define CR_JCEN				BIT(0)
+#define SR_COF				BIT(7)
+#define SR_HPDF				BIT(6)
+#define SR_EOCF				BIT(5)
+#define SR_OFNEF			BIT(4)
+#define SR_OFTF				BIT(3)
+#define SR_IFNFF			BIT(2)
+#define SR_IFTF				BIT(1)
+#define CFR_CHPDF			BIT(6)
+#define CFR_CEOCF			BIT(5)
+
+/* number of quantization tables minus 1 to insert in the output stream */
+enum stm_jpeg_color_space {
+	STM_JPEG_CS_GRAY = 0x00, /* 1 quantization table */
+	STM_JPEG_CS_YCBCR = 0x01, /* 2 quantization table */
+	STM_JPEG_CS_RGB = 0x02, /* 3 quantization table */
+	STM_JPEG_CS_CMYK = 0x03, /* 4 quantization table */
+};
+
+/* number of color components minus 1 */
+enum stm_jpeg_num_comp {
+	STM_JPEG_NF_1 = 0x00, /* 1 color component */
+	STM_JPEG_NF_2 = 0x01, /* 2 color component */
+	STM_JPEG_NF_3 = 0x02, /* 3 color component */
+	STM_JPEG_NF_4 = 0x03, /* 4 color component */
+};
+
+#endif
 #endif
