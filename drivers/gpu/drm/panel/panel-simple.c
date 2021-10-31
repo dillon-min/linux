@@ -845,6 +845,33 @@ static void panel_simple_shutdown(struct device *dev)
 	drm_panel_unprepare(&panel->base);
 }
 
+static const struct display_timing osddisplays_osd057T0559_34ts_timing = {
+       .pixelclock = { 36000000, 36000000, 36000000 },
+       .hactive = { 800, 800, 800 },
+       .hfront_porch = { 20, 20, 20 },
+       .hback_porch = { 40, 40, 40 },
+       .hsync_len = { 2, 2, 2 },
+       .vactive = { 480, 480, 480 },
+       .vfront_porch = { 11, 11, 11 },
+       .vback_porch = { 32, 32, 32 },
+       .vsync_len = { 17, 17, 17 },
+       .flags = DISPLAY_FLAGS_HSYNC_LOW | DISPLAY_FLAGS_VSYNC_LOW,
+};
+
+static const struct panel_desc osddisplays_osd057T0559_34ts = {
+       .timings = &osddisplays_osd057T0559_34ts_timing,
+       .num_timings = 1,
+       .bpc = 6,
+       .size = {
+               .width = 42,
+               .height = 28,
+       },
+       .bus_format = MEDIA_BUS_FMT_RGB565_1X16,
+       .bus_flags = DRM_BUS_FLAG_DE_HIGH
+                  | DRM_BUS_FLAG_PIXDATA_DRIVE_POSEDGE,
+       .connector_type = DRM_MODE_CONNECTOR_DPI,
+};
+
 static const struct drm_display_mode ampire_am_1280800n3tzqw_t00h_mode = {
 	.clock = 71100,
 	.hdisplay = 1280,
@@ -4838,6 +4865,9 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "sharp,ls020b1dd01d",
 		.data = &sharp_ls020b1dd01d,
 	}, {
+                .compatible = "osddisplays,osd057T0559-34ts",
+                .data = &osddisplays_osd057T0559_34ts,
+        }, {
 		.compatible = "shelly,sca07010-bfn-lnn",
 		.data = &shelly_sca07010_bfn_lnn,
 	}, {
