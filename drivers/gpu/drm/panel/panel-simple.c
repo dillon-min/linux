@@ -3042,28 +3042,28 @@ static const struct panel_desc rocktech_rk101ii01d_ct = {
 };
 
 static const struct drm_display_mode samsung_ltn101nt05_mode = {
-	.clock = 54030,
+	.clock = 45030,
 	.hdisplay = 1024,
-	.hsync_start = 1024 + 24,
-	.hsync_end = 1024 + 24 + 136,
-	.htotal = 1024 + 24 + 136 + 160,
+	.hsync_start = 1024 + 160,
+	.hsync_end = 1024 + 160 + 150,
+	.htotal = 1024 + 160 + 150 + 10,
 	.vdisplay = 600,
-	.vsync_start = 600 + 3,
-	.vsync_end = 600 + 3 + 6,
-	.vtotal = 600 + 3 + 6 + 61,
+	.vsync_start = 600 + 23,
+	.vsync_end = 600 + 23 + 11,
+	.vtotal = 600 + 23 + 11 + 1,
 };
 
 static const struct panel_desc samsung_ltn101nt05 = {
 	.modes = &samsung_ltn101nt05_mode,
 	.num_modes = 1,
-	.bpc = 6,
+	.bpc = 8,
 	.size = {
 		.width = 223,
 		.height = 125,
 	},
-	.bus_format = MEDIA_BUS_FMT_RGB666_1X7X3_SPWG,
+	.bus_format = MEDIA_BUS_FMT_RGB565_1X16,
 	.bus_flags = DRM_BUS_FLAG_DE_HIGH,
-	.connector_type = DRM_MODE_CONNECTOR_LVDS,
+	.connector_type = DRM_MODE_CONNECTOR_DPI,
 };
 
 static const struct display_timing satoz_sat050at40h12r2_timing = {
