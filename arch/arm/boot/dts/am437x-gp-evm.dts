@@ -947,7 +947,7 @@
 
 &cpsw_port1 {
 	phy-handle = <&ethphy0>;
-	phy-mode = "rgmii-id";
+	phy-mode = "rgmii-rxid";
 	ti,dual-emac-pvid = <1>;
 };
 
