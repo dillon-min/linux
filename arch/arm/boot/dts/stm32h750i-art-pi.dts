@@ -99,15 +99,12 @@
 		};
 	};
 
-	panel {
+	panel_rgb: panel-rgb {
 		compatible = "ampire,am-480272h3tmqw-t01h";
-
-		pinctrl-0 = <&ltdc_pins_a>;
-		pinctrl-names = "default";
-		backlight = <&backlight>;
+		//backlight = <&backlight>;
 
 		port {
-			panel_in_rgb: endpoint@0 {
+			panel_in_rgb: endpoint {
 				remote-endpoint = <&ltdc_out_rgb>;
 			};
 		};
@@ -157,9 +154,15 @@
 		pinctrl-names = "default";
 		status = "okay";
 	};
+
+	trigger@2 {
+		status = "okay";
+	};
 };
 
 &ltdc {
+	pinctrl-0 = <&ltdc_pins_a>;
+	pinctrl-names = "default";
 	status = "okay";
 
 	port {
