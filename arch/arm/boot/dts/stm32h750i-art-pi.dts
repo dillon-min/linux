@@ -81,13 +81,6 @@
 		serial1 = &usart3;
 	};
 
-	backlight: backlight {
-		compatible = "pwm-backlight";
-		pwms = <&pwm3 0 50000 0>;
-		brightness-levels = <0 51 53 56 62 75 101 152 255>;
-		default-brightness-level = <7>;
-	};
-
 	leds {
 		compatible = "gpio-leds";
 		led-red {
@@ -101,7 +94,7 @@
 
 	panel_rgb: panel-rgb {
 		compatible = "ampire,am-480272h3tmqw-t01h";
-		//backlight = <&backlight>;
+		enable-gpios = <&gpiod 4 GPIO_ACTIVE_HIGH>;
 
 		port {
 			panel_in_rgb: endpoint {
@@ -144,20 +137,6 @@
 
 &jpeg_codec {
 	status = "okay";
-};
-
-&lptimer3 {
-	status = "okay";
-
-	pwm3: pwm {
-		pinctrl-0 = <&pwm3_pins_a>;
-		pinctrl-names = "default";
-		status = "okay";
-	};
-
-	trigger@2 {
-		status = "okay";
-	};
 };
 
 &ltdc {

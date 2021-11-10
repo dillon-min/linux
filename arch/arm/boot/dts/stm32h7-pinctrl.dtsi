@@ -116,15 +116,6 @@
 		};
 	};
 
-	pwm3_pins_a: pwm3-0 {
-		pins {
-			pinmux = <STM32_PINMUX('D', 4, AF2)>; /* HRTIM_FLT3 */
-			bias-pull-down;
-			drive-push-pull;
-			slew-rate = <0>;
-		};
-	};
-
 	ethernet_rmii: rmii-0 {
 		pins {
 			pinmux = <STM32_PINMUX('G', 11, AF11)>,
