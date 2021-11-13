@@ -32,6 +32,64 @@ void print_descriptor_info(struct device *dev, struct mxc_jpeg_desc *desc)
 	dev_dbg(dev, " MXC JPEG STM_CTRL 0x%x\n", desc->stm_ctrl);
 }
 
+void stm_jpeg_core_enable(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CR, CR_JCEN, CR_JCEN);
+}
+
+void stm_jpeg_core_disable(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CR, CR_JCEN, 0);
+}
+
+void stm_jpeg_disable(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CONF0, CONFR0_START, 0);
+}
+
+void stm_jpeg_enable(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CONF0, CONFR0_START, CONFR0_START);
+}
+
+void stm_jpeg_disable_int(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CR, CR_IE_MASK, 0);
+}
+
+void stm_jpeg_enable_int(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CR, CR_IE_MASK, CR_HPDIE | CR_EOCIE);
+}
+
+void stm_jpeg_flush_in_fifo(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CR, CR_IFF, CR_IFF);
+}
+
+void stm_jpeg_flush_out_fifo(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CR, CR_OFF, CR_OFF);
+}
+
+void stm_jpeg_clear_flags(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CFR, CFR_CHPDF, CFR_CHPDF);
+	reg_update_bits(j->regs, JPEG_REG_CFR, CFR_CEOCF, CFR_CEOCF);
+}
+
+void stm_jpeg_config_decode(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CONFR1, CONFR1_DECODE, CONFR1_DECODE);
+	reg_update_bits(j->regs, JPEG_REG_CONFR1, CONFR1_HDR_EN, CONFR1_HDR_EN);
+}
+
+void stm_jpeg_config_encode(struct stm_jpeg *j)
+{
+	reg_update_bits(j->regs, JPEG_REG_CONFR1, CONFR1_DECODE, 0);
+}
+
+#if 0
 void print_cast_status(struct device *dev, void __iomem *reg,
 		       unsigned int mode)
 {
@@ -166,3 +224,4 @@ void mxc_jpeg_set_desc(u32 desc, void __iomem *reg, int slot)
 	writel(desc | MXC_NXT_DESCPT_EN,
 	       reg + MXC_SLOT_OFFSET(slot, SLOT_NXT_DESCPT_PTR));
 }
+#endif

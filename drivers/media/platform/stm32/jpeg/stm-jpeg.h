@@ -178,5 +178,183 @@ struct mxc_jpeg_sos {
 } __packed;
 #else
 #define STM_JPEG_NAME			"stm32-jpeg"
+/* Flags that indicate a format can be used for capture/output */
+#define STM_JPEG_FMT_FLAG_ENC_CAPTURE	(1 << 0)
+#define STM_JPEG_FMT_FLAG_ENC_OUTPUT	(1 << 1)
+#define STM_JPEG_FMT_FLAG_DEC_CAPTURE	(1 << 2)
+#define STM_JPEG_FMT_FLAG_DEC_OUTPUT	(1 << 3)
+#define STM_JPEG_FMT_FLAG_STM32H7		(1 << 4)
+#define STM_JPEG_FMT_FLAG_STM32F7	(1 << 5)
+#define STM_JPEG_FMT_RGB			(1 << 7)
+#define STM_JPEG_FMT_NON_RGB		(1 << 8)
+
+#define STM_JPEG_ENCODE		0
+#define STM_JPEG_DECODE		1
+#define STM_JPEG_DISABLE	-1
+
+#define FMT_TYPE_OUTPUT		0
+#define FMT_TYPE_CAPTURE	1
+
+#define STM_JPEG_MAX_WIDTH 2592
+#define STM_JPEG_MAX_HEIGHT 2592
+#define STM_JPEG_MIN_WIDTH 32
+#define STM_JPEG_MIN_HEIGHT 32
+/* Version numbers */
+enum stm_jpeg_version {
+	STM_JPEG_F7,
+	STM_JPEG_H7,
+};
+
+enum stm_jpeg_ctx_state {
+	JPEGCTX_RUNNING = 0,
+	JPEGCTX_RESOLUTION_CHANGE,
+};
+
+struct stm_jpeg_variant {
+	unsigned int		version;
+	unsigned int		fmt_ver_flag;
+	struct v4l2_m2m_ops	*m2m_ops;
+	irqreturn_t		(*jpeg_irq)(int irq, void *priv);
+	const char		*clk_names[JPEG_MAX_CLOCKS];
+	int			num_clocks;
+};
+
+/**
+ * struct stm_jpeg - JPEG IP abstraction
+ * @lock:		the mutex protecting this structure
+ * @slock:		spinlock protecting the device contexts
+ * @v4l2_dev:		v4l2 device for mem2mem mode
+ * @vfd_encoder:	video device node for encoder mem2mem mode
+ * @vfd_decoder:	video device node for decoder mem2mem mode
+ * @m2m_dev:		v4l2 mem2mem device data
+ * @regs:		JPEG IP registers mapping
+ * @irq:		JPEG IP irq
+ * @irq_ret:		JPEG IP irq result value
+ * @clocks:		JPEG IP clock(s)
+ * @dev:		JPEG IP struct device
+ * @variant:		driver variant to be used
+ * @irq_status:		interrupt flags set during single encode/decode
+ *			operation
+ */
+struct stm_jpeg {
+	struct mutex		lock;
+	spinlock_t		slock;
+
+	struct v4l2_device	v4l2_dev;
+	struct video_device	*vfd_encoder;
+	struct video_device	*vfd_decoder;
+	struct v4l2_m2m_dev	*m2m_dev;
+
+	void __iomem		*regs;
+	unsigned int		irq;
+	enum exynos4_jpeg_result irq_ret;
+	struct clk		*clocks[JPEG_MAX_CLOCKS];
+	struct device		*dev;
+	struct stm_jpeg_variant *variant;
+	u32			irq_status;
+};
+
+/**
+ * struct stm_jpeg_fmt - driver's internal color format data
+ * @name: format description
+ * @fourcc: fourcc code, 0 if not applicable
+ * @subsampling: subsampling of jpeg components
+ * @depth:	number of bits per pixel
+ * @colplanes:	number of color planes (1 for packed formats)
+ * @ns: number of components minus 1 for scan header marker segment.
+ * @color_space: number of quantization tables minus 1.
+ * @nf: number of color components minus 1.
+ * @h_factor:
+ * @v_factor:
+ * @hsf: horizontal sampling factor for component i.
+ * @vsf: vertical sampling factor for component i.
+ * @nb: number of data units minus 1 that belong to a particular color in the MCU.
+ * @qt: selects quantization table used for component i.
+ * @ha: selects the Huffman table for encoding AC coefficients.
+ * @hd: selects the Huffman table for encoding DC coefficients.
+ * @flags:	flags describing format applicability
+ */
+struct stm_jpeg_fmt {
+	const char	*name;
+	u32			fourcc;
+	enum v4l2_jpeg_chroma_subsampling	subsampling;
+	int			h_align;
+	int			v_align;
+	int			depth;
+	int			colplanes;
+	u32			flags;
+};
+
+/**
+ * struct stm_jpeg_q_data - parameters of one queue
+ * @fmt:	driver-specific format of this queue
+ * @w:		image width
+ * @h:		image height
+ * @size:	image buffer size in bytes
+ */
+struct stm_jpeg_q_data {
+	struct stm_jpeg_fmt	*fmt;
+	u32			w;
+	u32			h;
+	u32			size;
+};
+
+/**
+ * struct stm_jpeg_ctx - the device context data
+ * @jpeg:		JPEG IP device for this context
+ * @mode:		compression (encode) operation or decompression (decode)
+ * @compr_quality:	destination image quality in compression (encode) mode
+ * @restart_interval:	JPEG restart interval for JPEG encoding
+ * @subsampling:	subsampling of a raw format or a JPEG
+ * @out_q:		source (output) queue information
+ * @cap_q:		destination (capture) queue queue information
+ * @scale_factor:	scale factor for JPEG decoding
+ * @crop_rect:		a rectangle representing crop area of the output buffer
+ * @fh:			V4L2 file handle
+ * @hdr_parsed:		set if header has been parsed during decompression
+ * @crop_altered:	set if crop rectangle has been altered by the user space
+ * @ctrl_handler:	controls handler
+ * @state:		state of the context
+ */
+struct stm_jpeg_ctx {
+	struct stm_jpeg		*jpeg;
+	unsigned int		mode;
+	unsigned short		compr_quality;
+	unsigned short		restart_interval;
+	unsigned short		subsampling;
+	struct s5p_jpeg_q_data	out_q;
+	struct s5p_jpeg_q_data	cap_q;
+	unsigned int		scale_factor;
+	struct v4l2_rect	crop_rect;
+	struct v4l2_fh		fh;
+	bool			hdr_parsed;
+	bool			crop_altered;
+	struct v4l2_ctrl_handler ctrl_handler;
+	enum stm_jpeg_ctx_state	state;
+};
+
+/**
+ * struct stm_jpeg_buffer - description of memory containing input JPEG data
+ * @size:	buffer size
+ * @curr:	current position in the buffer
+ * @data:	pointer to the data
+ */
+struct stm_jpeg_buffer {
+	unsigned long size;
+	unsigned long curr;
+	unsigned long data;
+};
+
+/**
+ * struct stm_jpeg_addr - JPEG converter physical address set for DMA
+ * @y:   luminance plane physical address
+ * @cb:  Cb plane physical address
+ * @cr:  Cr plane physical address
+ */
+struct stm_jpeg_addr {
+	u32     y;
+	u32     cb;
+	u32     cr;
+};
 #endif
 #endif

@@ -159,10 +159,10 @@ void mxc_jpeg_set_regs_from_desc(struct mxc_jpeg_desc *desc,
 #define JPEG_REG_HUFF_BASE	0x0190
 #define JPEG_REG_HUFF_SYMB	0x0210
 #define JPEG_REG_DHT_MEM	0x0360
-#define JPEG_REG_HUFFENC_AC0	0x0500
-#define JPEG_REG_HUFFENC_AC1	0x0660
-#define JPEG_REG_HUFFENC_DC0	0x07c0
-#define JPEG_REG_HUFFENC_DC1	0x07e0
+#define JPEG_REG_HUFF_AC0	0x0500
+#define JPEG_REG_HUFF_AC1	0x0660
+#define JPEG_REG_HUFF_DC0	0x07c0
+#define JPEG_REG_HUFF_DC1	0x07e0
 
 #define CONFR0_START		BIT(0)
 #define CONFR1_YSIZE_MASK	GENMASK(31, 16)
@@ -187,6 +187,8 @@ void mxc_jpeg_set_regs_from_desc(struct mxc_jpeg_desc *desc,
 #define CONFRx_NB_SHIFT		4
 #define CONFRx_QT_MASK		GENMASK(3, 2)
 #define CONFRx_QT_SHIFT		2
+#define CR_IE_MASK			GENMASK(6, 1)
+#define CR_IE_SHIFT			1
 #define CONFRx_QT_0			0x00
 #define CONFRx_QT_1			0x01
 #define CONFRx_QT_2			0x02
