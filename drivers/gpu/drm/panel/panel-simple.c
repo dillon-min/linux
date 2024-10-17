@@ -852,6 +852,33 @@ static const struct panel_desc ampire_am_800480l1tmqw_t00h = {
 	.connector_type = DRM_MODE_CONNECTOR_DPI,
 };
 
+static const struct display_timing osddisplays_osd057T0559_34ts_timing = {
+       .pixelclock = { 36000000, 36000000, 36000000 },
+       .hactive = { 800, 800, 800 },
+       .hfront_porch = { 20, 20, 20 },
+       .hback_porch = { 40, 40, 40 },
+       .hsync_len = { 2, 2, 2 },
+       .vactive = { 480, 480, 480 },
+       .vfront_porch = { 11, 11, 11 },
+       .vback_porch = { 32, 32, 32 },
+       .vsync_len = { 17, 17, 17 },
+       .flags = DISPLAY_FLAGS_HSYNC_LOW | DISPLAY_FLAGS_VSYNC_LOW,
+};
+
+static const struct panel_desc osddisplays_osd057T0559_34ts = {
+       .timings = &osddisplays_osd057T0559_34ts_timing,
+       .num_timings = 1,
+       .bpc = 6,
+       .size = {
+               .width = 42,
+               .height = 28,
+       },
+       .bus_format = MEDIA_BUS_FMT_RGB565_1X16,
+       .bus_flags = DRM_BUS_FLAG_DE_HIGH
+                  | DRM_BUS_FLAG_PIXDATA_DRIVE_POSEDGE,
+       .connector_type = DRM_MODE_CONNECTOR_DPI,
+};
+
 static const struct panel_desc ampire_am800480r3tmqwa1h = {
 	.modes = &ampire_am800480r3tmqwa1h_mode,
 	.num_modes = 1,
@@ -5049,6 +5076,9 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "yes-optoelectronics,ytc700tlag-05-201c",
 		.data = &yes_optoelectronics_ytc700tlag_05_201c,
 	}, {
+        .compatible = "osddisplays,osd057T0559-34ts",
+        .data = &osddisplays_osd057T0559_34ts,
+    }, {
 		/* Must be the last entry */
 		.compatible = "panel-dpi",
 		.data = &panel_dpi,

@@ -16,10 +16,6 @@
 	model = "TI AM437x GP EVM";
 	compatible = "ti,am437x-gp-evm","ti,am4372","ti,am43";
 
-	aliases {
-		display0 = &lcd0;
-	};
-
 	chosen {
 		stdout-path = &uart0;
 	};
@@ -52,18 +48,18 @@
 		enable-active-high;
 	};
 
-	lcd_bl: backlight {
+	backlight {
 		compatible = "pwm-backlight";
 		pwms = <&ecap0 0 50000 PWM_POLARITY_INVERTED>;
 		brightness-levels = <0 51 53 56 62 75 101 152 255>;
-		default-brightness-level = <8>;
+		default-brightness-level = <7>;
 	};
 
 	matrix_keypad: matrix_keypad0 {
 		compatible = "gpio-matrix-keypad";
 		debounce-delay-ms = <5>;
 		col-scan-delay-us = <2>;
-
+		status = "disabled";
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&matrix_keypad_default>;
 		pinctrl-1 = <&matrix_keypad_sleep>;
@@ -86,13 +82,10 @@
 		};
 
 	lcd0: display {
-		compatible = "osddisplays,osd070t1718-19ts", "panel-dpi";
-		label = "lcd";
-
-		backlight = <&lcd_bl>;
+		compatible = "osddisplays,osd057T0559-34ts", "panel-dpi";
 
 		port {
-			lcd_in: endpoint {
+			panel_in: endpoint {
 				remote-endpoint = <&dpi_out>;
 			};
 		};
@@ -265,14 +258,6 @@
 
 	dss_pins: dss-pins {
 		pinctrl-single,pins = <
-			AM4372_IOPAD(0x820, PIN_OUTPUT_PULLUP | MUX_MODE1) /*gpmc ad 8 -> DSS DATA 23 */
-			AM4372_IOPAD(0x824, PIN_OUTPUT_PULLUP | MUX_MODE1)
-			AM4372_IOPAD(0x828, PIN_OUTPUT_PULLUP | MUX_MODE1)
-			AM4372_IOPAD(0x82c, PIN_OUTPUT_PULLUP | MUX_MODE1)
-			AM4372_IOPAD(0x830, PIN_OUTPUT_PULLUP | MUX_MODE1)
-			AM4372_IOPAD(0x834, PIN_OUTPUT_PULLUP | MUX_MODE1)
-			AM4372_IOPAD(0x838, PIN_OUTPUT_PULLUP | MUX_MODE1)
-			AM4372_IOPAD(0x83c, PIN_OUTPUT_PULLUP | MUX_MODE1) /*gpmc ad 15 -> DSS DATA 16 */
 			AM4372_IOPAD(0x8a0, PIN_OUTPUT_PULLUP | MUX_MODE0) /* DSS DATA 0 */
 			AM4372_IOPAD(0x8a4, PIN_OUTPUT_PULLUP | MUX_MODE0)
 			AM4372_IOPAD(0x8a8, PIN_OUTPUT_PULLUP | MUX_MODE0)
@@ -297,6 +282,36 @@
 		>;
 	};
 
+	emmc_ds_pins_default: emmc_ds_pins_default {
+               pinctrl-single,pins = <
+                       AM4372_IOPAD(0x820, PIN_INPUT_PULLUP | MUX_MODE2)
+                       AM4372_IOPAD(0x824, PIN_INPUT_PULLUP | MUX_MODE2)
+                       AM4372_IOPAD(0x828, PIN_INPUT_PULLUP | MUX_MODE2)
+                       AM4372_IOPAD(0x82c, PIN_INPUT_PULLUP | MUX_MODE2)
+                       AM4372_IOPAD(0x830, PIN_INPUT_PULLUP | MUX_MODE2)
+                       AM4372_IOPAD(0x834, PIN_INPUT_PULLUP | MUX_MODE2)
+                       AM4372_IOPAD(0x838, PIN_INPUT_PULLUP | MUX_MODE2)
+                       AM4372_IOPAD(0x83c, PIN_INPUT_PULLUP | MUX_MODE2)
+                       AM4372_IOPAD(0x880, PIN_INPUT_PULLUP | MUX_MODE2) /* gpmc_csn1.mmc1_clk */
+                       AM4372_IOPAD(0x884, PIN_INPUT_PULLUP | MUX_MODE2) /* gpmc_csn2.mmc1_cmd */
+               >;
+    };
+
+    emmc_ds_pins_sleep: emmc_ds_pins_sleep {
+               pinctrl-single,pins = <
+                       AM4372_IOPAD(0x820, PIN_INPUT_PULLDOWN | MUX_MODE7)
+                       AM4372_IOPAD(0x824, PIN_INPUT_PULLDOWN | MUX_MODE7)
+                       AM4372_IOPAD(0x828, PIN_INPUT_PULLDOWN | MUX_MODE7)
+                       AM4372_IOPAD(0x82c, PIN_INPUT_PULLDOWN | MUX_MODE7)
+                       AM4372_IOPAD(0x830, PIN_INPUT_PULLDOWN | MUX_MODE7)
+                       AM4372_IOPAD(0x834, PIN_INPUT_PULLDOWN | MUX_MODE7)
+                       AM4372_IOPAD(0x838, PIN_INPUT_PULLDOWN | MUX_MODE7)
+                       AM4372_IOPAD(0x83c, PIN_INPUT_PULLDOWN | MUX_MODE7)
+                       AM4372_IOPAD(0x880, PIN_INPUT_PULLDOWN | MUX_MODE7) /* gpmc_csn1.gpio1_30 */
+                       AM4372_IOPAD(0x884, PIN_INPUT_PULLDOWN | MUX_MODE7) /* gpmc_csn2.gpio1_31 */
+               >;
+    };
+	
 	display_mux_pins: display-mux-pins {
 		pinctrl-single,pins = <
 			/* GPIO 5_8 to select LCD / HDMI */
@@ -769,9 +784,14 @@
 
 &tscadc {
 	status = "okay";
-
+    tsc {
+            ti,wires = <4>;
+            ti,x-plate-resistance = <200>;
+            ti,coordiante-readouts = <5>;
+            ti,wire-config = <0x00 0x11 0x22 0x33>;
+    };
 	adc {
-		ti,adc-channels = <0 1 2 3 4 5 6 7>;
+		ti,adc-channels = <4 5 6 7>;
 	};
 };
 
@@ -792,7 +812,7 @@
 &gpio0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&gpio0_pins>;
-	status = "okay";
+	status = "disabled";
 
 	sel-emmc-nand-hog {
 		gpio-hog;
@@ -814,23 +834,20 @@
 };
 
 &gpio3 {
-	status = "okay";
+	status = "disabled";
 };
 
 &gpio4 {
 	status = "okay";
 };
 
-&gpio5_target {
-	ti,no-reset-on-init;
-};
-
 &gpio5 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&display_mux_pins>;
 	status = "okay";
+	ti,no-reset-on-init;
 
-	sel-lcd-hdmi-hog {
+	p8 {
 		/*
 		 * SelLCDorHDMI selects between display and audio paths:
 		 * Low: HDMI display with audio via HDMI
@@ -858,13 +875,13 @@
 	 * When enabling eMMC, disable GPMC/NAND and set
 	 * SelEMMCorNAND to output-high
 	 */
-	status = "disabled";
+	status = "okay";
 	vmmc-supply = <&evm_v3_3d>;
 	bus-width = <8>;
 	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&emmc_pins_default>;
-	pinctrl-1 = <&emmc_pins_sleep>;
-	non-removable;
+	pinctrl-0 = <&emmc_ds_pins_default>;
+	pinctrl-1 = <&emmc_ds_pins_sleep>;
+	ti,non-removable;
 };
 
 &mmc3 {
@@ -881,7 +898,7 @@
 	pinctrl-1 = <&mmc3_pins_sleep>;
 	cap-power-off-card;
 	keep-power-in-suspend;
-	non-removable;
+	ti,non-removable;
 
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -928,9 +945,10 @@
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&davinci_mdio_default>;
 	pinctrl-1 = <&davinci_mdio_sleep>;
+	status = "okay";
 
-	ethphy0: ethernet-phy@0 {
-		reg = <0>;
+	ethphy0: ethernet-phy@4 {
+		reg = <4>;
 	};
 };
 
@@ -953,7 +971,7 @@
 	 * When enabling GPMC, disable eMMC and set
 	 * SelEMMCorNAND to output-low
 	 */
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&nand_flash_x8>;
 	ranges = <0 0 0x08000000 0x01000000>;	/* CS0 space. Min partition = 16MB */
@@ -1045,8 +1063,8 @@
 
 	port {
 		dpi_out: endpoint {
-			remote-endpoint = <&lcd_in>;
-			data-lines = <24>;
+			remote-endpoint = <&panel_in>;
+			data-lines = <16>;
 		};
 	};
 };
