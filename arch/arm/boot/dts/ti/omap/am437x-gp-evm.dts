@@ -90,7 +90,19 @@
 			};
 		};
 	};
+    leds {
+            compatible = "gpio-leds";
 
+            pinctrl-names = "default";
+            pinctrl-0 = <&leds_pins>;
+
+            led0 {
+                    label = "am437x-ds:green:heartbeat";
+                    gpios = <&gpio5 6 GPIO_ACTIVE_LOW>;
+                    linux,default-trigger = "heartbeat";
+                    default-state = "on";
+            };
+    };
 	/* fixed 12MHz oscillator */
 	refclk: oscillator {
 		#clock-cells = <0>;
@@ -151,7 +163,11 @@
 			0x25C (DS0_PULL_UP_DOWN_EN | PIN_OUTPUT_PULLUP | DS0_FORCE_OFF_MODE | MUX_MODE7) /* spi0_cs0.gpio5_7 */
 		>;
 	};
-
+    leds_pins: leds-pins {
+            pinctrl-single,pins = <
+                    AM4372_IOPAD(0x958, PIN_OUTPUT | MUX_MODE7)     /* spi0_d1.gpio5_6 */
+            >;
+    };
 	i2c0_pins: i2c0-pins {
 		pinctrl-single,pins = <
 			AM4372_IOPAD(0x988, PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)  /* i2c0_sda.i2c0_sda */
@@ -725,7 +741,7 @@
 };
 
 &i2c1 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
 	pixcir_ts@5c {
